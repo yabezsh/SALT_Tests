@@ -9,8 +9,9 @@ class ExternalADC :  public I2C {
         ~ExternalADC();
         
         void set_preamplifier();
-        void read_adc();
+        void read_adc(uint16_t*);
         bool isConversed();
+        void inVolts(uint16_t*,double*);
     private:
         int device_address;
         float preamplifier;

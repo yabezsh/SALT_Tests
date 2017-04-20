@@ -4,11 +4,12 @@
 int main()
 {
 //    ExternalADC *adc1115 = new ExternalADC(0b01001000,0b11110011,0b11110011);
-std::cout<<" 0"<<std::endl;
 ExternalADC *adc1115 = new ExternalADC(0b01001000,1);
-std::cout<<" 1"<<std::endl;
 adc1115->access_device();
-std::cout<<" 2"<<std::endl;
-adc1115->read_adc();
+uint16_t adc_counts = 0;
+double v = 0;
+adc1115->read_adc(&adc_counts);
+adc1115->inVolts(&adc_counts, &v);
+
     return 0;
 }
