@@ -15,7 +15,7 @@ I2C::I2C(int8_t bus_number, int8_t device_address)
 I2C::~I2C(){ close(bus); }
 
 void I2C::open_bus()
-{   const char *bus_name = "/dev/i2c-0";// bus_n.c_str();
+{   const char *bus_name = "/dev/i2c-1";// bus_n.c_str();
     if ((bus = open(bus_name, O_RDWR)) < 0) {
         printf("file %s and bus_number  %i\n",bus_name,bus_number);
         int errvsv = errno;
@@ -39,20 +39,30 @@ void I2C::set_device_address(int8_t device_address) {I2C::device_address = devic
 
 void I2C::access_device()
 {
-    open_bus();
-    get_bus_access();
+    this->open_bus();
+    this->get_bus_access();
 }
 
 void I2C::write_buffer(uint8_t register_address, uint16_t data){}
 void I2C::write_buffer(uint8_t register_address, uint8_t bit_15_8, uint8_t bit_7_0)
 {
     uint8_t buffer[3] = {register_address, bit_15_8, bit_7_0};
-    printf("bufferr[0]    %i\nbufferr[1]    %i\nbufferr[2]    %i\n",buffer[0],buffer[1],buffer[2]);
     if (write(bus, buffer, 3) != 3) {
         perror("Write to register");
         exit(-1);
     }
 }
+
+void I2C::write_buffer(uint8_t register_address, uint8_t bit_7_0)
+{
+    uint8_t buffer[2] = {register_address, bit_7_0};
+    if (write(bus, buffer, 2) != 2) {
+        perror("Write to register");
+        exit(-1);
+    }
+}
+
+
 
 void I2C::read_buffer(uint8_t register_address, uint16_t* data)
 {
@@ -66,14 +76,26 @@ void I2C::read_buffer(uint8_t register_address, uint16_t* data)
         perror("Read conversion");
         exit(-1);
     }
-    printf("buffer[0]  %li    HEX 0x%02x \n",buffer[0],buffer[0]);
-    printf("buffer[1]  %li    HEX 0x%02x \n",buffer[1],buffer[1]);
     
     *data = buffer[0] << 8 | buffer[1];
-    printf("data  %li    HEX 0x%04x \n",*data,*data);
+    if( *data<0 ) data = 0;  
     
-    if( *data<0 ) data = 0;
-    printf("data2  %li    HEX 0x%04x \n",*data,*data);
-  
+}
+
+void I2C::read_buffer(uint8_t register_address, uint8_t* data)
+{
+    uint8_t buffer[2] = {register_address, 0};
+    if (write(bus, buffer, 1) != 1) {
+        perror("Write register select");
+        exit(-1);
+    }
+    
+    if (read(bus, buffer, 1) != 1) {
+        perror("Read conversion");
+        exit(-1);
+    }
+    
+    *data = buffer[0];
+    if( *data<0 ) data = 0;  
     
 }

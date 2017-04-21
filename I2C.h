@@ -21,12 +21,17 @@ class I2C {
         void set_device_address(int8_t);
         void write_buffer(uint8_t, uint16_t);
         void write_buffer(uint8_t, uint8_t, uint8_t);
+        void write_buffer(uint8_t, uint8_t);
+        
         void read_buffer(uint8_t, uint16_t*);
         void read_buffer(uint8_t, uint8_t, uint8_t);
+        void read_buffer(uint8_t, uint8_t*);
+        
         void access_device();
-    private:
+        
         void open_bus();
         void get_bus_access();
+    private:
         int bus;
         int bus_number;
         int device_address;    
