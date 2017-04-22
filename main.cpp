@@ -3,6 +3,7 @@
 #include <iostream> 
 #include "Fpga.h"
 #include "CurrentMonitor.h"
+#include "Salt.h"
 
 
 
@@ -68,14 +69,31 @@ if(r_w==2){
 uint16_t cur_counts = 0;
 CurrentMonitor *cur1 = new CurrentMonitor(1,0b01000000);
 cur1->access_device();
-cur1->configure();
+
+cur1->set_config_bits(0b00011111,0b00000100);
+cur1->set_calib_bits(0b00000000,0b00100000);
+
+cur1->define_setup();
 cur1->read_current(&cur_counts);
 
 CurrentMonitor *cur2 = new CurrentMonitor(1,0b01000001);
 cur2->access_device();
-cur2->configure();
+cur2->set_config_bits(0b00011111,0b00000100);
+cur2->set_calib_bits(0b00000000,0b00100000);
+
+cur2->define_setup();
 cur2->read_current(&cur_counts);
 
 
+
+
+
+
+/*
+Salt *st = new Salt();
+uint8_t data = 0;
+st->read_salt(0b101,0, &data);
+printf(" 0x%02x \n",data);
+*/
     return 0;
 }
