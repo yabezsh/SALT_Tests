@@ -24,7 +24,13 @@ void CurrentMonitor::calibrate()
 void CurrentMonitor::read_current(uint16_t *current_counts)
 {
     read_buffer(0b00000100, current_counts);
-    printf("Values: HEX 0x%02x\n  or  %i mA \n",*current_counts, (*current_counts)/20);
+//    printf("Values: HEX 0x%02x\n  or  %i mA \n",*current_counts, (*current_counts)/20);
+}
+
+void CurrentMonitor::convert_to_amp(uint16_t* current_counts, float* value)
+{
+ printf("Sorry! Convertion to volts is not finished! It works only for the default bits configuration. Fot others it's nessacery convert by yourself based on manual. You need to count LSB value for your configuration");
+ *value = (*current_counts)/20;
 }
 
 void CurrentMonitor::set_config_bits(uint16_t config_bits)

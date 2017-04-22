@@ -17,7 +17,8 @@ class CurrentMonitor : public I2C {
         void set_config_bits(uint16_t);
         void set_config_bits(uint8_t,uint8_t);
         void set_calib_bits(uint16_t );
-        void set_calib_bits(uint8_t,uint8_t); 
+        void set_calib_bits(uint8_t,uint8_t);
+        void convert_to_amp(uint16_t*, float*);
         
 
     private:

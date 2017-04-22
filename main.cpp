@@ -67,6 +67,7 @@ if(r_w==2){
 */
 
 uint16_t cur_counts = 0;
+float amp = 0;
 CurrentMonitor *cur1 = new CurrentMonitor(1,0b01000000);
 cur1->access_device();
 
@@ -75,6 +76,9 @@ cur1->set_calib_bits(0b00000000,0b00100000);
 
 cur1->define_setup();
 cur1->read_current(&cur_counts);
+cur1->convert_to_amp(&cur_counts,&amp);
+
+printf("Monitor 1: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
 
 CurrentMonitor *cur2 = new CurrentMonitor(1,0b01000001);
 cur2->access_device();
@@ -83,7 +87,9 @@ cur2->set_calib_bits(0b00000000,0b00100000);
 
 cur2->define_setup();
 cur2->read_current(&cur_counts);
+cur1->convert_to_amp(&cur_counts,&amp);
 
+printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
 
 
 
