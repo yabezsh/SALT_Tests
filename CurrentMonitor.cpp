@@ -1,6 +1,12 @@
 #include "CurrentMonitor.h"
 
-CurrentMonitor::CurrentMonitor(int8_t  bus_number = 1, int8_t device_address = 0b01000000) : I2C( bus_number, device_address){} 
+CurrentMonitor::CurrentMonitor(int8_t  bus_number = 1, int8_t device_address = 0b01000000) : I2C( bus_number, device_address)
+{
+    bit_15_8_conf = 0b00000100;
+    bit_7_0_conf = 0b00011111;
+    bit_15_8_calib = 0b00100000;
+    bit_7_0_calib = 0b00000000;
+} 
 
 CurrentMonitor::~CurrentMonitor(){}
 

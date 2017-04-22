@@ -66,6 +66,11 @@ if(r_w==2){
 }
 */
 
+
+
+//Example how to define different configuration
+// but this config is default one as well
+
 uint16_t cur_counts = 0;
 float amp = 0;
 CurrentMonitor *cur1 = new CurrentMonitor(1,0b01000000);
