@@ -8,11 +8,13 @@ class fastComm {
  public:
 
   fastComm();
+  fastComm(Fpga*);
+  
   ~fastComm();
 
   // define fpga link
- Fpga *fpga = new Fpga();
-//Fpga *fpga;
+// Fpga *fpga = new Fpga();
+ // Fpga *fpga;
 
   // functions
   uint32_t assignAddress(string name, string name_list[], uint32_t address_list[]);
@@ -45,5 +47,7 @@ class fastComm {
     "DAQ_Cfg", "DAQ_Ctl", "DAQ_Delay", "DAQ_Length0", "DAQ_Length1", "DAQ_Read0", "DAQ_Read1", "DAQ_Read2", "DAQ_Read3", "DAQ_Read4", "DAQ_Trigger" // DAQ Registers                                                
   };
 
+ private:
+    Fpga *fpga;
 
 };

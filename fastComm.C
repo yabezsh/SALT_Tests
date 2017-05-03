@@ -2,6 +2,7 @@
 #include "fastComm.h"
 
 fastComm::fastComm(){}
+fastComm::fastComm(Fpga *fpga){fpga=fpga;}
 
 void fastComm::TFC_W(uint32_t length, uint32_t command[], int period, int singleShot) {
 
