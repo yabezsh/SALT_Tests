@@ -1,4 +1,5 @@
 #include "Fpga.h"
+#include "fastComm.h"
 
 fastComm::fastComm(){}
 
