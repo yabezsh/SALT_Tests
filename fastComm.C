@@ -3,17 +3,18 @@
 
 fastComm::fastComm(){}
 
-void fastComm::TFC_W(int length, uint32_t command[], int period, int singleShot) {
+void fastComm::TFC_W(uint32_t length, uint32_t command[], int period, int singleShot) {
 
   uint32_t fpga_reg;
   uint32_t data = 0;
+//    Fpga *fpga = new Fpga();
 
   fpga_reg = assignAddress("TFC_Length", m_FPGA_address_name, m_FPGA_address);
   fpga->write_fpga(fpga_reg, length);
 
   // specify command list
   fpga_reg = assignAddress("TFC_WR", m_FPGA_address_name, m_FPGA_address);
-  for(int i = 0; i < length; i++)
+  for(uint i = 0; i < length; i++)
     fpga->write_fpga(fpga_reg, command[i]);
 
   // Specify configuration
@@ -115,7 +116,7 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
 // Gets Hex representation address of command "name"
 
-uint32_t fastComm::assignAddress(string name, string name_list[], uint8_t address_list[]) {
+uint32_t fastComm::assignAddress(string name, string name_list[], uint32_t address_list[]) {
   int i = 0;
 
   while( name != name_list[i] ) i++;

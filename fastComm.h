@@ -11,12 +11,13 @@ class fastComm {
   ~fastComm();
 
   // define fpga link
-  Fpga *fpga = new Fpga();
+ Fpga *fpga = new Fpga();
+//Fpga *fpga;
 
   // functions
   uint32_t assignAddress(string name, string name_list[], uint32_t address_list[]);
   unsigned int DAQ_READ(int clock_delay, int length, int trigger);
-  void TFC_W(int length, uint32_t command[], int period, int singleShot);
+  void TFC_W(uint32_t length, uint32_t command[], int period, int singleShot);
 
   // addresses
   uint32_t m_FPGA_address[37]= {
