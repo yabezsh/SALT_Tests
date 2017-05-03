@@ -3,9 +3,9 @@
 
 fastComm::fastComm(){}
 
-void fastComm::TFC_W(int length, uint8_t command[], int period, int singleShot) {
+void fastComm::TFC_W(int length, uint32_t command[], int period, int singleShot) {
 
-  uint8_t fpga_reg;
+  uint32_t fpga_reg;
 
   fpga_reg = assignAddress("TFC_Length", m_FPGA_address_name, m_FPGA_address);
   fpga->write_fpga(fpga_reg, length);
@@ -43,16 +43,16 @@ void fastComm::TFC_W(int length, uint8_t command[], int period, int singleShot) 
 unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
   unsigned int packet=0;
-  uint8_t fpga_reg;
-  uint8_t e0 = 0;
-  uint8_t e1 = 0;
-  uint8_t e2 = 0;
-  uint8_t e3 = 0;
-  uint8_t e4 = 0;
+  uint32_t fpga_reg;
+  uint32_t e0 = 0;
+  uint32_t e1 = 0;
+  uint32_t e2 = 0;
+  uint32_t e3 = 0;
+  uint32_t e4 = 0;
 
   // Clear FIFO
   fpga_reg = assignAddress("DAQ_Ctl", m_FPGA_address_name, m_FPGA_address);
-  uint8_t Cmd = 0x01; // Clear_Fifo command
+  uint32_t Cmd = 0x01; // Clear_Fifo command
   fpga->write_fpga(fpga_reg, Cmd);
 
   // Specify length

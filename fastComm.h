@@ -16,7 +16,7 @@ class fastComm {
   // functions
   uint8_t assignAddress(string name, string name_list[], uint8_t address_list[]);
   unsigned int DAQ_READ(int clock_delay, int length, int trigger);
-  void TFC_W(int length, uint8_t command[], int period, int singleShot);
+  void TFC_W(int length, uint32_t command[], int period, int singleShot);
 
   // addresses
   uint8_t m_FPGA_address[37]= {
