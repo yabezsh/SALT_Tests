@@ -111,3 +111,15 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
 
 }
+
+
+// Gets Hex representation address of command "name"
+
+uint32_t fastComm::assignAddress(string name, string name_list[], uint8_t address_list[]) {
+  int i = 0;
+
+  while( name != name_list[i] ) i++;
+
+  return address_list[i];
+
+}

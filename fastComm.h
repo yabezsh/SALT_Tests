@@ -14,12 +14,12 @@ class fastComm {
   Fpga *fpga = new Fpga();
 
   // functions
-  uint8_t assignAddress(string name, string name_list[], uint8_t address_list[]);
+  uint32_t assignAddress(string name, string name_list[], uint32_t address_list[]);
   unsigned int DAQ_READ(int clock_delay, int length, int trigger);
   void TFC_W(int length, uint32_t command[], int period, int singleShot);
 
   // addresses
-  uint8_t m_FPGA_address[37]= {
+  uint32_t m_FPGA_address[37]= {
     0x00, 0x01, // General FPGA Configuration                                                                                                                                                                       
     0x40, 0x41, 0x42, 0x43, 0x44, 0x45, // I2C Configuration Channel 0 (Dedicated to SALT128)                                                                                                                       
     0x50, 0x51, 0x52, 0x53, 0x54, 0x55, // I2C Configuration Channel 1                                                                                                                                              
@@ -27,7 +27,7 @@ class fastComm {
     0x80, 0x81, 0x82, 0x83, 0x84, 0x85, // TFC Configuration                                                                                                                                                        
     0xC0, 0xC1, 0xC2, 0xC3, 0xC4, 0xC5, 0xC6, 0xC7, 0xC8, 0xC9, 0xCF // DAQ Registers                                                                                                                               
   };
-  uint8_t m_FPGA_address_value[37]= {
+  uint32_t m_FPGA_address_value[37]= {
     0x00, 0x00, // General FPGA Configuration                                                                                                                                                                       
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // I2C Configuration Channel 0 (Dedicated to SALT128)                                                                                                                       
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // I2C Configuration Channel 1                                                                                                                                              
