@@ -1,5 +1,7 @@
 #include "Fpga.h"
 
+fastComm::fastComm(){}
+
 void fastComm::TFC_W(int length, uint8_t command[], int period, int singleShot) {
 
   uint8_t fpga_reg;
@@ -37,7 +39,7 @@ void fastComm::TFC_W(int length, uint8_t command[], int period, int singleShot) 
   }
 }
 
-unsigned int mainScript::DAQ_READ(int clock_delay, int length, int trigger) {
+unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
   unsigned int packet=0;
   uint8_t fpga_reg;
