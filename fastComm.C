@@ -1,48 +1,56 @@
 #include "Fpga.h"
 #include "fastComm.h"
+#include "registers_config.h"
 
-fastComm::fastComm(){}
-fastComm::fastComm(Fpga *fpga){fpga=fpga;}
+FastComm::FastComm(Fpga *fpga){fpga_=fpga;}
 
-void fastComm::TFC_W(uint32_t length, uint32_t command[], int period, int singleShot) {
-
-  uint32_t fpga_reg;
-  uint32_t data = 0;
-//    Fpga *fpga = new Fpga();
-
-  fpga_reg = assignAddress("TFC_Length", m_FPGA_address_name, m_FPGA_address);
-  fpga->write_fpga(fpga_reg, length);
-
-  // specify command list
-  fpga_reg = assignAddress("TFC_WR", m_FPGA_address_name, m_FPGA_address);
-  for(uint i = 0; i < length; i++)
-    fpga->write_fpga(fpga_reg, command[i]);
-
-  // Specify configuration
-  fpga_reg = assignAddress("TFC_Cfg", m_FPGA_address_name, m_FPGA_address);
-  if(singleShot)
-    fpga->write_fpga(fpga_reg, 0x02); // single shot
-  else fpga->write_fpga(fpga_reg, 0x00); // continuous
-  
-  // Specify period
-  fpga_reg = assignAddress("TFC_Period0", m_FPGA_address_name, m_FPGA_address);
-  fpga->write_fpga(fpga_reg, length);
-
-  // Trigger (for single shot only)
-  fpga_reg = assignAddress("TFC_Cfg", m_FPGA_address_name, m_FPGA_address);
-  if(singleShot) fpga->write_fpga(fpga_reg, 0x01);
-  
-  while(1==1) {
-    fpga->read_fpga(fpga_reg, &data);
-    if(data==0x00) {
-
-      cout << "TFC Sent" << endl;
-      return;
+void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool singleShot)
+{
+    fpga_->write_fpga(registers::TFC_LENGTH, length);
+    
+    // specify command list
+    for(uint i = 0; i < length; i++)
+    {
+        fpga_->write_fpga(registers::TFC_WR, command[i]);
     }
-
-  }
+    
+    // Specify configuration
+    if(singleShot)
+    {
+        fpga_->write_fpga(registers::TFC_CFG, 0x02); // single shot
+    } else fpga_->write_fpga(registers::TFC_CFG, 0x00); // continuous
+    
+    // Specify period
+    fpga_->write_fpga(registers::TFC_PERIOD0, length);
+    
+    // Trigger (for single shot only)
+    if(singleShot) fpga_->write_fpga(registers::TFC_CFG, 0x01);
+    
+    uint32_t data = 0;
+    while(1==1)
+    {
+        fpga_->read_fpga(registers::TFC_CFG, &data);
+        if(data==0x00) {
+            cout << "TFC Sent" << endl;
+            return;
+        }
+    }
 }
 
+void FastComm::read_daq(int clock_delay, int length, int trigger, uint32_t *packet)
+{
+  uint32_t data =0;
+  uint32_t e0 = 0;
+  uint32_t e1 = 0;
+  uint32_t e2 = 0;
+  uint32_t e3 = 0;
+  uint32_t e4 = 0;
+  
+  // Clear FIFO
+  uint32_t Cmd = 0x01;
+ // fpga_->write_fpga(fpga_reg, Cmd);
+}
+/*
 unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
   unsigned int packet=0;
@@ -114,14 +122,4 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
 
 }
 
-
-// Gets Hex representation address of command "name"
-
-uint32_t fastComm::assignAddress(string name, string name_list[], uint32_t address_list[]) {
-  int i = 0;
-
-  while( name != name_list[i] ) i++;
-
-  return address_list[i];
-
-}
+*/
