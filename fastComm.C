@@ -31,8 +31,8 @@ void fastComm::TFC_W(int length, uint32_t command[], int period, int singleShot)
   if(singleShot) fpga->write_fpga(fpga_reg, 0x01);
   
   while(1==1) {
-
-    if(fpga->read_fpga(fpga_reg, &data)==0x00) {
+    fpga->read_fpga(fpga_reg, &data);
+    if(data==0x00) {
 
       cout << "TFC Sent" << endl;
       return;
@@ -75,19 +75,24 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
   // read e-links and construct data packet
   for(int i = 0; i < length; i++) {
     fpga_reg = assignAddress("DAQ_Read0", m_FPGA_address_name, m_FPGA_address);
-    e0 = fpga->read_fpga(fpga_reg, &data);
+    fpga->read_fpga(fpga_reg, &data);
+    e0=data;
 
     fpga_reg = assignAddress("DAQ_Read1", m_FPGA_address_name, m_FPGA_address);
-    e1 = fpga->read_fpga(fpga_reg, &data);
+    fpga->read_fpga(fpga_reg, &data);
+    e1=data;
 
     fpga_reg = assignAddress("DAQ_Read2", m_FPGA_address_name, m_FPGA_address);
-    e2 = fpga->read_fpga(fpga_reg, &data);
+    fpga->read_fpga(fpga_reg, &data);
+    e2=data;
 
     fpga_reg = assignAddress("DAQ_Read3", m_FPGA_address_name, m_FPGA_address);
-    e3 = fpga->read_fpga(fpga_reg, &data);
+    fpga->read_fpga(fpga_reg, &data);
+    e3=data;
 
     fpga_reg = assignAddress("DAQ_Read4", m_FPGA_address_name, m_FPGA_address);
-    e4 = fpga->read_fpga(fpga_reg, &data);
+    fpga->read_fpga(fpga_reg, &data);
+    e4=data;
 
     packet |= e0 << (length - (5*i+1) )*8;
 
