@@ -20,4 +20,4 @@ void Salt::read_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t* command
     this -> read_buffer(low_reg_bits,command);
 }
 
-void Salt::read_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t* command) {}
+void Salt::write_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t* command) {}
