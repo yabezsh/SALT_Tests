@@ -36,7 +36,7 @@ void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool s
         }
     }
 }
-
+/*
 void FastComm::read_daq(int clock_delay, int length, int trigger, uint32_t *packet)
 {
   uint32_t data =0;
@@ -50,8 +50,9 @@ void FastComm::read_daq(int clock_delay, int length, int trigger, uint32_t *pack
   uint32_t Cmd = 0x01;
  // fpga_->write_fpga(fpga_reg, Cmd);
 }
-/*
-unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
+*/
+
+void FastComm::read_daq(int clock_delay, int length, int trigger, uint32_t *packet) {
 
   unsigned int packet=0;
   uint32_t fpga_reg;
@@ -63,45 +64,45 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
   uint32_t e4 = 0;
 
   // Clear FIFO
-  fpga_reg = assignAddress("DAQ_Ctl", m_FPGA_address_name, m_FPGA_address);
-  uint32_t Cmd = 0x01; // Clear_Fifo command
-  fpga->write_fpga(fpga_reg, Cmd);
+  //fpga_reg = assignAddress("DAQ_Ctl", m_FPGA_address_name, m_FPGA_address);
+  uint32_t Cmd = 0x10; // Clear_Fifo command
+  fpga->write_fpga(registers::DAQ_CFG, Cmd);
 
   // Specify length
-  fpga_reg = assignAddress("DAQ_Length0", m_FPGA_address_name, m_FPGA_address);
-  fpga->write_fpga(fpga_reg, length);
+  //  fpga_reg = assignAddress("DAQ_Length0", m_FPGA_address_name, m_FPGA_address);
+  fpga->write_fpga(registers::DAQ_ACQ_L, length);
   
   // Specify configuration
-  fpga_reg = assignAddress("DAQ_Delay", m_FPGA_address_name, m_FPGA_address);
-  fpga->write_fpga(fpga_reg, clock_delay); // specify clock delay
+  //fpga_reg = assignAddress("DAQ_Delay", m_FPGA_address_name, m_FPGA_address);
+  fpga->write_fpga(registers::DAQ_DELAY, clock_delay); // specify clock delay
 
-  fpga_reg = assignAddress("DAQ_Trigger", m_FPGA_address_name, m_FPGA_address);
-  if(trigger) fpga->write_fpga(fpga_reg, 0x01 << 1); // Writes 1 to DAQ_Triggered
+  //fpga_reg = assignAddress("DAQ_Trigger", m_FPGA_address_name, m_FPGA_address);
+  if(trigger) fpga->write_fpga(registers::DAQ_TRIGGER, 0x01 << 1); // Writes 1 to DAQ_Triggered
 
   // Trigger acquisition 
-  fpga->write_fpga(fpga_reg, 1);
+  fpga->write_fpga(registers::DAQ_TRIGGER, 1);
 
 
   // read e-links and construct data packet
   for(int i = 0; i < length; i++) {
-    fpga_reg = assignAddress("DAQ_Read0", m_FPGA_address_name, m_FPGA_address);
-    fpga->read_fpga(fpga_reg, &data);
+    //fpga_reg = assignAddress("DAQ_Read0", m_FPGA_address_name, m_FPGA_address);
+    fpga->read_fpga(registers::DAQ_READ0, &data);
     e0=data;
 
-    fpga_reg = assignAddress("DAQ_Read1", m_FPGA_address_name, m_FPGA_address);
-    fpga->read_fpga(fpga_reg, &data);
+    //fpga_reg = assignAddress("DAQ_Read1", m_FPGA_address_name, m_FPGA_address);
+    fpga->read_fpga(registers::DAQ_READ1, &data);
     e1=data;
 
-    fpga_reg = assignAddress("DAQ_Read2", m_FPGA_address_name, m_FPGA_address);
-    fpga->read_fpga(fpga_reg, &data);
+    //fpga_reg = assignAddress("DAQ_Read2", m_FPGA_address_name, m_FPGA_address);
+    fpga->read_fpga(registers::DAQ_READ2, &data);
     e2=data;
 
-    fpga_reg = assignAddress("DAQ_Read3", m_FPGA_address_name, m_FPGA_address);
-    fpga->read_fpga(fpga_reg, &data);
+    //fpga_reg = assignAddress("DAQ_Read3", m_FPGA_address_name, m_FPGA_address);
+    fpga->read_fpga(registers::DAQ_READ3, &data);
     e3=data;
 
-    fpga_reg = assignAddress("DAQ_Read4", m_FPGA_address_name, m_FPGA_address);
-    fpga->read_fpga(fpga_reg, &data);
+    //fpga_reg = assignAddress("DAQ_Read4", m_FPGA_address_name, m_FPGA_address);
+    fpga->read_fpga(registers::DAQ_READ4, &data);
     e4=data;
 
     packet |= e0 << (length - (5*i+1) )*8;
@@ -117,9 +118,7 @@ unsigned int fastComm::DAQ_READ(int clock_delay, int length, int trigger) {
   }
 
 
-  return packet;
+  return;// packet;
 
 
 }
-
-*/
