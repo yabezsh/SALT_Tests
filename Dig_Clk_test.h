@@ -6,6 +6,8 @@
 #include <ctime>
 #include <sstream>
 #include "Salt.h"
+#include "Fpga.h"
+#include "fastComm.h"
 
 //#include <time.h> 
 using namespace std;
@@ -15,7 +17,7 @@ class Dig_Clk_test {
  public:
 
   Dig_Clk_test(){};
-  Dig_Clk_test(Fpga*, Salt*, int*, FastComm*);
+  Dig_Clk_test(Fpga*, Salt*, int8_t, FastComm*);
   ~Dig_Clk_test(){};
 
   //Salt *st = new Salt();
@@ -24,5 +26,9 @@ class Dig_Clk_test {
   bool DLL_Check();
   bool PLL_Check();
   bool I2C_check();
-
+ private:
+  Fpga* fpga_;
+  Salt* salt_;
+  FastComm* fastComm_;
+  int chipID_;
 };
