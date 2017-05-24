@@ -149,7 +149,7 @@ namespace registers
   const int baseline106_cfg       = 0x270;
   const int baseline107_cfg       = 0x271;
   const int baseline108_cfg       = 0x272;
-  const int baseline119_cfg       = 0x273;
+  const int baseline109_cfg       = 0x273;
   const int baseline110_cfg       = 0x274;
   const int baseline111_cfg       = 0x275;
   const int baseline112_cfg       = 0x276;
