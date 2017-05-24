@@ -31,6 +31,7 @@ class I2C {
         
         void open_bus();
         void get_bus_access();
+        const char* make_bus_name();
     private:
         int bus;
         int bus_number;
