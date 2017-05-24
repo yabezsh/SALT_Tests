@@ -1,0 +1,204 @@
+#include <time.h>
+#include "Dig_Clk_test.h"
+#include "Salt.h"
+#include <unistd.h>
+#include "Fpga.h"
+#include "registers_config.h"
+#include "fastComm.h"
+
+// CONSTRUCTOR
+Dig_Clkl_test::Dig_Clk_test(Fpga *fpga, Salt *salt, int *chipID, FastComm *fastComm) {
+  fpga_=fpga;
+  salt_=salt;
+  chipID_=chipID;
+  fastComm_=fastComm;
+}
+
+/*
+// Gets Hex representation address of command "name"
+uint8_t mainScript::assignAddress(string name, string name_list[], uint8_t address_list[]) {
+
+  int i = 0;
+  //cout << "i is " << i << endl;
+  //cout << "name is " << name << endl;
+  //cout << "name at i is " << name_list[i];
+  while( name != name_list[i] ) i++;
+
+  //cout << "address is " << name_list[i] << endl;
+  return address_list[i];
+  
+  //Salt *st = new Salt();                                                                                                                                                                                                                         
+  //uint8_t data = 0;                                                                                                                                                                                                                              
+  //st->read_salt(0b101,0, &data);                                                                                                                                                                                                                 
+  //printf(" 0x%02x \n",data);
+///
+}
+*/
+
+// Synch output of DAQ to clock
+void Dig_Clk_test::DAQ_Sync() {
+
+  int sync = 0;
+  uint32_t *data = 0;
+
+  // DAQ Reset
+  //fpga_reg = assignAddress("DAQ_Cfg", m_FPGA_address_name, m_FPGA_address);
+  fpga_->write_fpga(registers::DAQ_CFG, 0x01);
+
+  // Clear FIFO
+  //  fpga_reg = assignAddress("DAQ_Ctl", m_FPGA_address_name, m_FPGA_address);
+  fpga_->write_fpga(registers::DAQ_CFG,0x10);
+
+  // Set correct pattern 
+  salt_->write_salt(chipID, registers::pattern_cfg, 0xAB); // Set pattern for synch, in this case hAB
+  salt_->write_salt(chipID, registers::ser_source_cfg, 0x22); // Reset ser_source_cfg (count up, pattern register output)
+
+  // DAQ Sync
+  //fpga_reg = assignAddress("DAQ_Cfg", m_FPGA_address_name, m_FPGA_address);
+
+  for (int i = 0; i < 10000; i++) {
+    
+    fpga_->write_fpga(registers::DAQ_CFG,0x02);
+    
+    while(1==1) {
+      fpga_->read_fpga(registers::DAQ_CFG, &data);
+      if(data == 0x04) break;
+    
+    }
+
+    fastComm_->read_daq(0,1,1,&data);
+    if(data == 0xAB) {
+      
+      cout << "E-links synched to clock" << endl;
+      return;
+      
+    }
+    else {
+      cout << "Failed to Synch E-links to clock" << endl;
+      exit();
+    }
+  
+  }
+}
+
+// DLL configuration as outlined in the SALT manual
+bool Dig_Clk_test::DLL_Check() {
+
+  uint32_t *data=0xFF;
+
+  // Set correct value of CP current
+  salt_->write_salt(chipID, registers::dll_cp_cfg, 0x9A);
+
+  // Set dll_vcdl_cfg to start value
+  uint8_t init = 0x60;
+  salt_->write_salt(chipID, registers::dll_vcdl_cfg, init);
+  
+  // Wait 1 us
+  usleep(1);
+
+  // Read dll_cur_ok bit from dll_vcdl_mon and make sure it is 0, otherwise increase start value of dll_vcdl_cfg
+  //salt_->read_salt(chipID, registers::dll_cur_ok, &data);
+  while(1 == 1) {
+    salt_->read_salt(chipID, registers::dll_cur_ok, &data);
+    if(data == 0) break;
+    init++;
+    salt_->write_salt(chipID, registers::dll_vcdl_cfg, init);
+  }
+
+  
+  while(data == 0) {
+
+    init--;
+    
+    salt_->write_salt(chipID, registers::dll_vcdl_cfg, init);
+    //    I2C_WRITE("Other", "dll_vcdl_cfg", init);
+    
+   // Wait 1 us
+    usleep(1);
+    salt_->read_salt(chipID, registers::dll_cur_ok, &data);
+
+  }
+
+  // start synch process
+  salt_->write_salt(chipID, registers::others_g_cfg, 0x40);
+  //I2C_WRITE("Other", "others_g_cfg", 0x40); // set dll_start to 1
+
+  // read dll_vcdl_voltage. if = 0 then pass, otherwise fail
+  salt_->read_salt(chipID, registers::dll_vcdl_mon, &data);
+  uint32_t value = data;
+
+  //I2C_READ("Other", "dll_vcdl_mon");
+
+
+  for(int B=0; B<6; B++) {
+    if( (value>>B & 0x01) != 0 ) 
+      return false;
+  }
+
+  return true;
+	
+
+}
+
+void Dig_Clk_test::PLL_Check() {
+
+  uint32_t *data = 0x00;
+
+  // Make sure PLL enabled and configured
+  salt_->read_salt(chipID, registers::pll_main_cfg, &data);
+
+  if(data != 0x8D)
+    salt_->write_salt(chipID, registers::pll_main_cfg, 0x8D);
+
+  // Make sure pll_cp_cfg is set to default b10011010
+  salt_->read_salt(chipID, registers::pll_main_cfg, &data);
+  if(data != 0x9A)
+    salt_->write_salt(chipID, registers::pll_cp_cfg, 0x9A);
+
+  // Read pll_vco_cfg and make sure approx 0
+  while(1 == 1) {
+
+    salt_->read_salt(chipID, registers::pll_sco_cfg, &data);
+
+    if(abs(data) < 3) break;
+
+    if(data > 3) data--;  
+    else if (data < -3) data++;
+
+    salt_->write_salt(chipID, registers::pll_vco_cur, data);
+
+  }
+
+  return;
+
+}
+
+bool Dig_Clk_test::I2C_check() {
+
+  uint32_t *data = 0;
+
+  // Configure PLL
+  salt_->write_salt(chipID, registers::pll_main_cfg, 0x8D);
+
+  // Check that I2C can Read/Write random patters
+  uint32_t x;
+  srand(time(NULL)); // seed random number generator
+
+  for(int i=0; i<100; i++) {
+
+    x = rand() & 0xFF;
+    x |= (rand() & 0xFF) << 8;
+    x |= (rand() & 0xFF) << 16;
+    x |= (rand() & 0xFF) << 24;
+
+    salt_->write_salt(chipID, registers::pattern_cfg, x);
+    
+    salt_->read_salt(chipID, registers::pattern_cfg, &data);
+
+    if(data!=x) return false;
+
+  }
+
+  return true;
+
+}
