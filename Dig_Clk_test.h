@@ -26,6 +26,7 @@ class Dig_Clk_test {
   bool DLL_Check();
   bool PLL_Check();
   bool I2C_check();
+  bool TFC_check()
  private:
   Fpga* fpga_;
   Salt* salt_;
