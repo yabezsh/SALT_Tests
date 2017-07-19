@@ -196,7 +196,75 @@ bool Dig_Clk_test::I2C_check() {
     if(data!=x) return false;
 
   }
+  return true;
 
+}
+
+bool Dig_Clk_test::TFC_check() {
+
+
+  // Reset TFC state machine and set all related registers to default values
+  fpga_->write_fpga(registers::TFC_CFG,0x01);
+
+  // define single shot tyransmission
+  bool singleShot = 1;
+
+  // Set syncX_cfg to default values
+  salt_->write_salt(chipID_, registers::sync0_cfg, 0x0F);
+  salt_->write_salt(chipID_, registers::sync1_cfg, 0x99);
+  salt_->write_salt(chipID_, registers::sync2_cfg, 0x55);
+  salt_->write_salt(chipID_, registers::sync3_cfg, 0xAA);
+  salt_->write_salt(chipID_, registers::sync4_cfg, 0xC);
+
+  // Define command length (will be 2 in this case)
+  uint32_t length = 0x02;
+
+  // Define command list (BXID and Sync)
+  uint32_t command[];
+  command[0] = 0x01; // BXID
+  command[1] = 0x40; // Sync
+
+  // Execute commands
+  fastComm_->write_tfc(length, command[], length, singleShot);
+
+  // Read out data packet
+  uint32_t length_read = 1; // number of clock cycles to read
+  uint32_t data = 0; // data packet
+  uint32_t delay = 0; // clock delay
+  int trigger = 1; // trigger aquisition
+  fastComm_->read_daq(delay,length_read,trigger,&data);
+ 
+  if((data & 15) != 0xC) return false; // check sync4
+  if((data >> 4) & 255 != 0xAA) return false; // check sync3
+  if((data >> 12) & 255 != 0x55) return false; // check sync2
+  if((data >> 20) & 255 != 0x99) return false; // check sync1
+  if((data >> 28) & 255 != 0x0F) return false; // check sync0
+
+  cout << "TFC sync completed" << endl;
+
+  // Reset TFC registers and empty data buffers by doing an FEReset
+  command[0]=0x02;
+  length = 0x01;
+  fastComm_->write_tfc(length, command[], length, singleShot);
+  fastComm_->read_daq(delay,length_read,trigger,&data);
+  if(data != 0) return false; // check to make sure FEReset clears data buffers, otherwise chip is BAD
+ 
+  // Check Header TFC command
+  command[0]=0x04;
+  fastComm_->write_tfc(length, command[], length, singleShot);
+  fastComm_->read_daq(delay,length_read,trigger,&data);
+
+  if((data & 15) != 9 || (data & 15) != 8) return false; // check header (should be more robust to make sure polarity is OK)
+  cout << "Header command check finished" << endl;
+
+  // Check BxVeto (should be same output as header command)
+  command[0] = 0x10;
+  fastComm_->write_tfc(length, command[], length, singleShot);
+  fastComm_->read_daq(delay,length_read,trigger,&data);
+  if((data & 15) != 9 || (data & 15) !=8) return false; // check header (should be more robust to make sure polarity is OK)                                                 
+  cout << "BxVeto command check finished" << endl;
+
+  cout << "TFC checks finished" << endl;
   return true;
 
 }
