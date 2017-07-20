@@ -1,7 +1,7 @@
 CC=arm-linux-gnueabihf-g++
 CFLAGS= -Wall  -std=c++11 -Dsoc_cv_av -g 
-INCLUDES= -I/home/iaro/intelFPGA/16.1/embedded/ip/altera/hps/altera_hps/hwlib/include -I/home/iaro/intelFPGA/16.1/embedded/ip/altera/hps/altera_hps/hwlib/include/soc_cv_av -I/home/iaro/intelFPGA/16.1/embedded/ip/altera/hps/altera_hps/hwlib/include/soc_cv_av/socal/
-SRCS= main.cpp I2C.cpp Fpga.cpp CurrentMonitor.cpp ExternalADC.cpp Salt.cpp
+INCLUDES= -I$(SOCEDS_DEST_ROOT)/ip/altera/hps/altera_hps/hwlib/include -I$(SOCEDS_DEST_ROOT)/ip/altera/hps/altera_hps/hwlib/include/soc_cv_av -I$(SOCEDS_DEST_ROOT)/ip/altera/hps/altera_hps/hwlib/include/soc_cv_av/socal/
+SRCS= main.cpp I2C.cpp Fpga.cpp CurrentMonitor.cpp ExternalADC.cpp Salt.cpp fastComm.C Dig_Clk_test.C
 OBJS=$(SRCS:.cpp=.o)
 MAIN=main
 
