@@ -31,6 +31,5 @@ class Dig_Clk_test {
   Fpga* fpga_;
   Salt* salt_;
   FastComm* fastComm_;
-  int chipID_;
   int max_commands = 20;
 };

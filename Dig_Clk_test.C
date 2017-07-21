@@ -7,10 +7,9 @@
 #include "fastComm.h"
 
 // CONSTRUCTOR
-Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, int8_t chipID, FastComm *fastComm) {
+Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, FastComm *fastComm) {
    fpga_=fpga;
   salt_=salt;
-  chipID_=chipID;
   fastComm_=fastComm;
 }
 
