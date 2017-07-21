@@ -26,10 +26,11 @@ class Dig_Clk_test {
   bool DLL_Check();
   bool PLL_Check();
   bool I2C_check();
-  bool TFC_check()
+  bool TFC_check();
  private:
   Fpga* fpga_;
   Salt* salt_;
   FastComm* fastComm_;
   int chipID_;
+  int max_commands = 20;
 };

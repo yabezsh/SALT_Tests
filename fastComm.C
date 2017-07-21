@@ -1,5 +1,5 @@
 #include "Fpga.h"
-#include "fastComm.h"
+ #include "fastComm.h"
 #include "registers_config.h"
 
 FastComm::FastComm(Fpga *fpga){fpga_=fpga;}
