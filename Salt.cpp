@@ -13,17 +13,29 @@ void Salt::find_device_address(int8_t high_reg_bits)
     this -> set_device_address(chip_id << 5 | high_reg_bits);
 }
 
-/*void Salt::read_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t* command)
+void Salt::read_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t* command)
 {
     this -> find_device_address(high_reg_bits);
     this -> get_bus_access();
     this -> read_buffer(low_reg_bits,command);
 }
-*/
+
 void Salt::read_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint16_t* command){}
 void Salt::write_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint16_t command) {}
 
-void Salt::read_salt(int16_t low_reg_bits, uint16_t* command){}
-void Salt::write_salt(int16_t low_reg_bits, uint16_t command) {}
+void Salt::read_salt(int16_t full_reg_bits, uint16_t* command)
+{
+	int8_t high_reg_bits,low_reg_bits;
+	this->split_register(full_reg_bits, &high_reg_bits, &high_reg_bits);
+	this->read_salt(high_reg_bits,low_reg_bits,command);
+
+}
+
+void Salt::split_register(int16_t full_reg_bits,int8_t* high_reg_bits,int8_t* low_reg_bits)
+{
+	*high_reg_bits = (full_reg_bits >> 8);
+        *low_reg_bits = full_reg_bits & 0xFF;
+}
+void Salt::write_salt(int16_t full_reg_bits, uint16_t command) {}
 
 //void Salt::write_salt(int8_t high_reg_bits, int8_t low_reg_bits, uint8_t command) {}
