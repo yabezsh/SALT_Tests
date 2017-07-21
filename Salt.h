@@ -10,8 +10,10 @@ class Salt : public I2C {
         void find_device_address(int8_t);
 //        void read_salt(int8_t, int8_t, uint8_t*);
 	void read_salt(int8_t, int8_t, uint16_t*);
+        void read_salt(int16_t, uint16_t*);
 //        void write_salt(int8_t, int8_t, uint8_t);
 	void write_salt(int8_t, int8_t, uint16_t);
+        void write_salt(int16_t, uint16_t);
     private:
         int8_t chip_id;
 
