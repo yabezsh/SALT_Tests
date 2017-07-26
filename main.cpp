@@ -96,8 +96,15 @@ cur1->convert_to_amp(&cur_counts,&amp);
 
 printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
 
+// test digital com
+ Fpga *fpga = new Fpga();
+ Salt *st = new Salt();  
+ FastComm *fastComm = new FastComm(fpga);
+ Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
 
-
+ // I2C test
+ dig_com->I2C_check();
+ cout << "I2C check OK" << endl;
 
 
 /*

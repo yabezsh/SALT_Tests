@@ -174,7 +174,9 @@ bool Dig_Clk_test::I2C_check() {
   uint16_t data = 0;
 
   // Configure PLL
+  cout << "Configuring PLL" << endl;
   salt_->write_salt(registers::pll_main_cfg, 0x8D);
+  cout << "PLL configured" << end;
 
   // Check that I2C can Read/Write random patters
   uint32_t x;
