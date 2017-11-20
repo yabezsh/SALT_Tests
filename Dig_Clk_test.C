@@ -5,6 +5,8 @@
 #include "Fpga.h"
 #include "registers_config.h"
 #include "fastComm.h"
+#include <iostream>
+using namespace std;
 
 // CONSTRUCTOR
 Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, FastComm *fastComm) {
@@ -176,23 +178,25 @@ bool Dig_Clk_test::I2C_check() {
   // Configure PLL
   cout << "Configuring PLL" << endl;
   salt_->write_salt(registers::pll_main_cfg, 0x8D);
-  cout << "PLL configured" << end;
+  cout << "PLL configured" << endl;
 
   // Check that I2C can Read/Write random patters
-  uint32_t x;
+  uint16_t x;
   srand(time(NULL)); // seed random number generator
 
-  for(int i=0; i<100; i++) {
+  for(int i=0; i<3; i++) {
 
     x = rand() & 0xFF;
     x |= (rand() & 0xFF) << 8;
     x |= (rand() & 0xFF) << 16;
     x |= (rand() & 0xFF) << 24;
 
+    cout << "x is " << x << endl;
+    
     salt_->write_salt(registers::pattern_cfg, x);
     
     salt_->read_salt(registers::pattern_cfg, &data);
-
+cout << " data is " << data << endl;
     if(data!=x) return false;
 
   }
