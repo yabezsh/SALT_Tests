@@ -37,7 +37,7 @@ void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool s
     }
 }
 
-void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint8_t &packet[1024*5]) {
+void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint8_t *packet[1024*5]) {
 
   uint32_t data =0;
   uint32_t e0 = 0;
