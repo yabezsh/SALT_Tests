@@ -44,6 +44,7 @@ void Dig_Clk_test::DAQ_Sync() {
   const int length=1000;
   int e[8][8] = {0};
   int bs_p[2];
+  bool found_opt = false;
 
 
   // DAQ Reset
@@ -63,7 +64,6 @@ void Dig_Clk_test::DAQ_Sync() {
 
   for(int k=0; k<10; k++) {
     for(int i = 0; i < 8; i++) {
-      
       for(int j = 0; j < 8; j++) {
 	
 	fastComm_->read_daq(0,length,1,&data);
@@ -75,9 +75,22 @@ void Dig_Clk_test::DAQ_Sync() {
 	  bs_p[0] = i;
 	  bs_p[1] = j;
 	  
+
+	  cout << "FPGA Clock Synch finished" << endl;
+	  cout << "bit slip is " << i << endl;
+	  cout << "phase is " << j << endl;
+	  found_opt = true;
+	  
+	  break;
+	  
 	}
 	
+	if(found_opt) break;
+	
       }
+      
+      if(found_opt) break;
+      
       //bit slip
       fpga_->write_fpga(registers::DAQ_CFG, 0x02);
       fpga_->write_fpga(registers::DAQ_CFG, 0x00);
