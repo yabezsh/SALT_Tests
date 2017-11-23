@@ -37,7 +37,7 @@ void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool s
     }
 }
 
-void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint32_t *packet) {
+void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint8_t &packet[1024*5]) {
 
   uint32_t data =0;
   uint32_t e0 = 0;
@@ -65,33 +65,39 @@ void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint
   // read e-links and construct data packet
   for(uint i = 0; i < length; i++) {
     fpga_->read_fpga(registers::DAQ_READ0, &data);
-    e0=data;
+    //e0=data;
+    packet[5*i]=data;
 
     fpga_->read_fpga(registers::DAQ_READ1, &data);
-    e1=data;
+    //e1=data;
+    packet[5*i+1]=data;
 
     fpga_->read_fpga(registers::DAQ_READ2, &data);
-    e2=data;
+    //e2=data;
+    packet[5*i+2]=data;
+
 
     fpga_->read_fpga(registers::DAQ_READ3, &data);
-    e3=data;
+    //e3=data;
+    packet[5*i+3]=data;
 
     fpga_->read_fpga(registers::DAQ_READ4, &data);
-    e4=data;
+    //e4=data;
+    packet[5*i+4]=data;
 
-    *packet |= e0 << (length - (5*i+1) )*8;
+    //    *packet |= e0 << (length - (5*i+1) )*8;
 
-    *packet |= e1 << (length - (5*i+2) )*8;
+    //    *packet |= e1 << (length - (5*i+2) )*8;
 
-    *packet |= e2 << (length - (5*i+3) )*8;
+    //    *packet |= e2 << (length - (5*i+3) )*8;
 
-    *packet |= e3 << (length - (5*i+4) )*8;
+    // *packet |= e3 << (length - (5*i+4) )*8;
 
-    *packet |= e4 << (length - (5*i+5) )*8;
+    //    *packet |= e4 << (length - (5*i+5) )*8;
 
   }
 
-
+  fpga_->write_fpga(registers::DAQ_TRIGGER, 0);
   return;// packet;
 
 

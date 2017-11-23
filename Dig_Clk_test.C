@@ -61,7 +61,7 @@ void Dig_Clk_test::DAQ_Sync() {
 
   
 
-  for(k=0; k<10; k++) {
+  for(int k=0; k<10; k++) {
     for(int i = 0; i < 8; i++) {
       
       for(int j = 0; j < 8; j++) {
@@ -91,7 +91,7 @@ void Dig_Clk_test::DAQ_Sync() {
 }
 
 
-void Dig_Clk_test::FPGA_PLL_shift(int16 phase) {
+void Dig_Clk_test::FPGA_PLL_shift(int16_t phase) {
 
   if(phase>0)  fpga_->write_fpga(registers::PLL_DFS_3,0x21);
   else fpga_->write_fpga(registers::PLL_DFS_3,0x01); //UP
