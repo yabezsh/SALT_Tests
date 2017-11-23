@@ -23,6 +23,8 @@ class Dig_Clk_test {
   //Salt *st = new Salt();
 
   void DAQ_Sync();
+  int Check_Ber(uint8_t packet, int length);
+  void FPGA_PLL_shift(int16 phase);
   bool DLL_Check();
   bool PLL_Check();
   bool I2C_check();

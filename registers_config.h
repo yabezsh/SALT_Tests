@@ -20,8 +20,7 @@ namespace registers
   //DAQ Registers	       	  
   const int DAQ_CFG               = 0x51000;
   const int DAQ_FIFO_L            = 0x51001;
-  const int DAQ_FIFO_H            = 0x51002;
-  			       	  
+  const int DAQ_FIFO_H            = 0x51002;  			       	  
   const int DAQ_DELAY             = 0x51003;
   const int DAQ_ACQ_L             = 0x51004;
   const int DAQ_ACQ_H             = 0x51005;
@@ -30,7 +29,13 @@ namespace registers
   const int DAQ_READ1             = 0x51008;
   const int DAQ_READ2             = 0x51009;
   const int DAQ_READ3             = 0x5100A;    
-  const int DAQ_READ4             = 0x5100B;    
+  const int DAQ_READ4             = 0x5100B;
+
+  // DAQ PLL System
+  const int PLL_DFS_1             = 0x40018;
+  const int PLL_DFS_2             = 0x40019;
+  const int PLL_DFS_3             = 0x40020;
+  const int PLL_DFS_4             = 0x40021;
   				  
   // SALT Registers ------------  
   // Analogue and mixed-mode	  
@@ -493,9 +498,7 @@ namespace registers
   const int bxreset_cnt2_snap_reg = 0x449;
   const int bxreset_cnt3_snap_reg = 0x44A;
 
-  // TODO: DAQ PLL System
-  
-  
+    
 }
 
 #endif // REGISTERS_CONFIG_H

@@ -39,46 +39,82 @@ uint8_t mainScript::assignAddress(string name, string name_list[], uint8_t addre
 // Synch output of DAQ to clock
 void Dig_Clk_test::DAQ_Sync() {
 
-  uint32_t data = 0;
+  //uint8_t data = 0;
+  uint8_t data[1024*5];
+  const int length=1000;
+  int e[8][8] = {0};
+  int bs_p[2];
+
 
   // DAQ Reset
-  //fpga_reg = assignAddress("DAQ_Cfg", m_FPGA_address_name, m_FPGA_address);
   fpga_->write_fpga(registers::DAQ_CFG, 0x01);
+  fpga_->write_fpga(registers::DAQ_CFG, 0x00);
 
   // Clear FIFO
-  //  fpga_reg = assignAddress("DAQ_Ctl", m_FPGA_address_name, m_FPGA_address);
   fpga_->write_fpga(registers::DAQ_CFG,0x10);
+  fpga_->write_fpga(registers::DAQ_CFG, 0x00);
 
   // Set correct pattern
-  salt_->write_salt(registers::pattern_cfg, 0xAB); // Set pattern for synch, in this case hAB
-  salt_->write_salt(registers::ser_source_cfg, 0x22); // Reset ser_source_cfg (count up, pattern register output)
+  // salt_->write_salt(registers::pattern_cfg, 0xAB); // Set pattern for synch, in this case hAB
+  salt_->write_salt(registers::ser_source_cfg, 0x23); // Reset ser_source_cfg (count up, pattern register output)
 
-  // DAQ Sync
-  //fpga_reg = assignAddress("DAQ_Cfg", m_FPGA_address_name, m_FPGA_address);
 
-  for (int i = 0; i < 10000; i++) {
-    
-    fpga_->write_fpga(registers::DAQ_CFG,0x02);
-    
-    while(1==1) {
-      fpga_->read_fpga(registers::DAQ_CFG, &data);
-      if(data == 0x04) break;
-    
-    }
-
-    fastComm_->read_daq(0,1,1,&data);
-    if(data == 0xAB) {
-      
-      cout << "E-links synched to clock" << endl;
-      return;
-      
-    }
-    else {
-      cout << "Failed to Synch E-links to clock" << endl;
-      exit(1);
-    }
   
+
+  for(k=0; k<10; k++) {
+    for(int i = 0; i < 8; i++) {
+      
+      for(int j = 0; j < 8; j++) {
+	
+	fastComm_->read_daq(0,length,1,&data);
+	e[i][j]+=Check_Ber(data,length);   
+	FPGA_PLL_shift(1);
+	
+	if((k==10) && (e[i][j]==0)) {
+	  
+	  bs_p[0] = i;
+	  bs_p[1] = j;
+	  
+	}
+	
+      }
+      //bit slip
+      fpga_->write_fpga(registers::DAQ_CFG, 0x02);
+      fpga_->write_fpga(registers::DAQ_CFG, 0x00);
+      
+      FPGA_PLL_shift(-8);
+      
+    }
+    
   }
+  
+}
+
+
+void Dig_Clk_test::FPGA_PLL_shift(int16 phase) {
+
+  if(phase>0)  fpga_->write_fpga(registers::PLL_DFS_3,0x21);
+  else fpga_->write_fpga(registers::PLL_DFS_3,0x01); //UP
+
+  fpga_->write_fpga(registers::PLL_DFS_1,abs(phase));
+  
+  fpga_->write_fpga(0x00040008,0x01);
+
+}
+
+int Dig_Clk_test::Check_Ber(uint8_t packet, int length) {
+
+  int error =0;
+  //int S;
+
+  for (int k=0; k<length-5; k+=5) {
+
+    if(packet[k]!=packet[k+5]+1) error++;
+
+  }
+  
+  return error;
+
 }
 
 // DLL configuration as outlined in the SALT manual
@@ -227,7 +263,7 @@ bool Dig_Clk_test::TFC_check() {
   uint32_t command[max_commands];
   command[0] = 0x01; // BXID
   command[1] = 0x40; // Sync
-
+ 
   // Execute commands
   fastComm_->write_tfc(length, command, length, singleShot);
 
