@@ -4,8 +4,8 @@
 #include "Fpga.h"
 #include "CurrentMonitor.h"
 #include "Salt.h"
-
-
+#include "fastComm.h"
+#include "Dig_Clk_test.h"
 
 #include "hwlib.h"
 #include "socal/socal.h"
@@ -70,7 +70,7 @@ if(r_w==2){
 
 //Example how to define different configuration
 // but this config is default one as well
-
+/*
 uint16_t cur_counts = 0;
 float amp = 0;
 CurrentMonitor *cur1 = new CurrentMonitor(1,0b01000000);
@@ -89,24 +89,52 @@ CurrentMonitor *cur2 = new CurrentMonitor(1,0b01000001);
 cur2->access_device();
 cur2->set_config_bits(0b00011111,0b00000100);
 cur2->set_calib_bits(0b00000000,0b00100000);
-
+ 
 cur2->define_setup();
 cur2->read_current(&cur_counts);
 cur1->convert_to_amp(&cur_counts,&amp);
 
 printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
+*/
+// test digital c
 
-// test digital com
+ cout << "FPGA" << endl;
  Fpga *fpga = new Fpga();
- Salt *st = new Salt();  
+ cout << "SALT" << endl;
+ Salt *st = new Salt(2,5);
+ cout << "Fast comm" << endl;
  FastComm *fastComm = new FastComm(fpga);
+ cout << "Dig comm" << endl;
  Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
 
  // I2C test
- dig_com->I2C_check();
- cout << "I2C check OK" << endl;
+ cout << "I2C test starting" << endl;
+ if(dig_com->I2C_check())
+   cout << "I2C check OK" << endl;
+ else
+   cout << "I2C check FAILED" << endl;
+ /*
+ cout << "DLL configuration starting" << endl;
+ if(dig_com->DLL_Check())
+   cout << "DLL configuration OK" << endl;
+ else
+   cout << "DLL configuration FAILED" <<endl;
+
+cout << "PLL configuration starting" << endl;
+ if(dig_com->PLL_Check())
+   cout << "PLL configuration OK" << endl;
+ else
+   cout << "PLL configuration FAILED" <<endl;
+
+ cout<< "Clk synch starting" << endl;
+ dig_com->DAQ_Sync();
+ 
+ cout << "Clk synch finished" <<endl;
+
+ */
 
 
+ 
 /*
 Salt *st = new Salt();
 uint8_t data = 0;

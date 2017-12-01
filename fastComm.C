@@ -17,14 +17,14 @@ void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool s
     // Specify configuration
     if(singleShot)
     {
-        fpga_->write_fpga(registers::TFC_CFG, 0x02); // single shot
-    } else fpga_->write_fpga(registers::TFC_CFG, 0x00); // continuous
+      fpga_->write_fpga(registers::TFC_CFG, (uint8_t)0x02); // single shot
+    } else fpga_->write_fpga(registers::TFC_CFG, (uint8_t)0x00); // continuous
     
     // Specify period
     fpga_->write_fpga(registers::TFC_PERIOD0, length);
     
     // Trigger (for single shot only)
-    if(singleShot) fpga_->write_fpga(registers::TFC_CFG, 0x01);
+    if(singleShot) fpga_->write_fpga(registers::TFC_CFG, (uint8_t)0x01);
     
     uint32_t data = 0;
     while(1==1)
@@ -37,9 +37,9 @@ void FastComm::write_tfc(uint32_t length, uint32_t command[], int period, bool s
     }
 }
 
-void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint8_t *packet[1024*5]) {
+void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint8_t (&packet)[5120]) {
 
-  uint8_t data =0;
+  uint32_t data =0;
   uint32_t e0 = 0;
   uint32_t e1 = 0;
   uint32_t e2 = 0;
@@ -56,10 +56,10 @@ void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint
   // Specify configuration
   fpga_->write_fpga(registers::DAQ_DELAY, clock_delay); // specify clock delay
 
-  if(trigger) fpga_->write_fpga(registers::DAQ_TRIGGER, 0x01 << 1); // Writes 1 to DAQ_Triggered
+  if(trigger) fpga_->write_fpga(registers::DAQ_TRIGGER, (uint8_t)0x01 ); // Writes 1 to DAQ_Triggered
 
   // Trigger acquisition 
-  fpga_->write_fpga(registers::DAQ_TRIGGER, 1);
+  fpga_->write_fpga(registers::DAQ_TRIGGER, (uint8_t) 1);
 
 
   // read e-links and construct data packet
@@ -97,7 +97,7 @@ void FastComm::read_daq(uint32_t clock_delay, uint32_t length, int trigger, uint
 
   }
 
-  fpga_->write_fpga(registers::DAQ_TRIGGER, 0);
+  fpga_->write_fpga(registers::DAQ_TRIGGER, (uint8_t) 0);
   return;// packet;
 
 

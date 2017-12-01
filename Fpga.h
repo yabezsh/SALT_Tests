@@ -33,12 +33,19 @@ class Fpga {
         void access_fpga();
         void read_fpga(uint32_t, uint32_t*);
         void write_fpga(uint32_t, uint32_t);
+
+	void read_fpga(uint32_t,uint8_t*);
+        void write_fpga(uint32_t, uint8_t);
+	
         void close_fpga();
     
     private:
         void find_reg_address(uint32_t);
         void read(uint32_t*);
         void write(uint32_t);
+
+	void read(uint8_t*);
+        void write(uint8_t);
         
         void *map_virtual_addr;
         void *map_register_address;

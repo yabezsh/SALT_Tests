@@ -40,7 +40,7 @@ uint8_t mainScript::assignAddress(string name, string name_list[], uint8_t addre
 void Dig_Clk_test::DAQ_Sync() {
 
   //uint8_t data = 0;
-  uint8_t data[1024*5];
+  uint8_t data[5120];
   const int length=1000;
   int e[8][8] = {0};
   int bs_p[2];
@@ -48,16 +48,16 @@ void Dig_Clk_test::DAQ_Sync() {
 
 
   // DAQ Reset
-  fpga_->write_fpga(registers::DAQ_CFG, 0x01);
-  fpga_->write_fpga(registers::DAQ_CFG, 0x00);
+  fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x01);
+  fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x00);
 
   // Clear FIFO
-  fpga_->write_fpga(registers::DAQ_CFG,0x10);
-  fpga_->write_fpga(registers::DAQ_CFG, 0x00);
+  fpga_->write_fpga(registers::DAQ_CFG,(uint8_t) 0x10);
+  fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x00);
 
   // Set correct pattern
   // salt_->write_salt(registers::pattern_cfg, 0xAB); // Set pattern for synch, in this case hAB
-  salt_->write_salt(registers::ser_source_cfg, 0x23); // Reset ser_source_cfg (count up, pattern register output)
+  salt_->write_salt(registers::ser_source_cfg, (uint8_t) 0x23); // Reset ser_source_cfg (count up, pattern register output)
 
 
   
@@ -66,7 +66,7 @@ void Dig_Clk_test::DAQ_Sync() {
     for(int i = 0; i < 8; i++) {
       for(int j = 0; j < 8; j++) {
 	
-	fastComm_->read_daq(0,length,1,&data);
+	fastComm_->read_daq(0,length,1,data);
 	e[i][j]+=Check_Ber(data,length);   
 	FPGA_PLL_shift(1);
 	
@@ -92,8 +92,8 @@ void Dig_Clk_test::DAQ_Sync() {
       if(found_opt) break;
       
       //bit slip
-      fpga_->write_fpga(registers::DAQ_CFG, 0x02);
-      fpga_->write_fpga(registers::DAQ_CFG, 0x00);
+      fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x02);
+      fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x00);
       
       FPGA_PLL_shift(-8);
       
@@ -106,16 +106,16 @@ void Dig_Clk_test::DAQ_Sync() {
 
 void Dig_Clk_test::FPGA_PLL_shift(int16_t phase) {
 
-  if(phase>0)  fpga_->write_fpga(registers::PLL_DFS_3,0x21);
-  else fpga_->write_fpga(registers::PLL_DFS_3,0x01); //UP
+  if(phase>0)  fpga_->write_fpga(registers::PLL_DFS_3,(uint8_t) 0x21);
+  else fpga_->write_fpga(registers::PLL_DFS_3,(uint8_t) 0x01); //UP
 
-  fpga_->write_fpga(registers::PLL_DFS_1,abs(phase));
+  fpga_->write_fpga(registers::PLL_DFS_1,(uint8_t) abs(phase));
   
-  fpga_->write_fpga(0x00040008,0x01);
+  fpga_->write_fpga(0x00040008,(uint8_t) 0x01);
 
 }
 
-int Dig_Clk_test::Check_Ber(uint8_t packet, int length) {
+int Dig_Clk_test::Check_Ber(uint8_t *packet, int length) {
 
   int error =0;
   //int S;
@@ -133,13 +133,13 @@ int Dig_Clk_test::Check_Ber(uint8_t packet, int length) {
 // DLL configuration as outlined in the SALT manual
 bool Dig_Clk_test::DLL_Check() {
 
-  uint16_t data=0xFF;
+  uint8_t data=0xFF;
 
   // Set correct value of CP current
   salt_->write_salt(registers::dll_cp_cfg, 0x9A);
 
   // Set dll_vcdl_cfg to start value
-  uint16_t init = 0x60;
+  uint8_t init = 0x60;
   salt_->write_salt(registers::dll_vcdl_cfg, init);
   
   // Wait 1 us
@@ -172,7 +172,7 @@ bool Dig_Clk_test::DLL_Check() {
 
   // read dll_vcdl_voltage. if = 0 then pass, otherwise fail
   salt_->read_salt(registers::dll_vcdl_mon, &data);
-  uint16_t value = data;
+  uint8_t value = data;
 
   //I2C_READ("Other", "dll_vcdl_mon");
 
@@ -189,7 +189,7 @@ bool Dig_Clk_test::DLL_Check() {
 
 bool Dig_Clk_test::PLL_Check() {
 
-  uint16_t data = 0x00;
+  uint8_t data = 0x00;
 
   // Make sure PLL enabled and configured
   salt_->read_salt(registers::pll_main_cfg, &data);
@@ -222,30 +222,30 @@ bool Dig_Clk_test::PLL_Check() {
 
 bool Dig_Clk_test::I2C_check() {
 
-  uint16_t data = 0;
+  uint8_t data = 0;
 
   // Configure PLL
-  cout << "Configuring PLL" << endl;
+  cout << "I2C_check: Configuring PLL" << endl;
   salt_->write_salt(registers::pll_main_cfg, 0x8D);
-  cout << "PLL configured" << endl;
+  cout << "I2C_check: PLL configured" << endl;
 
   // Check that I2C can Read/Write random patters
-  uint16_t x;
+  uint8_t x;
   srand(time(NULL)); // seed random number generator
 
-  for(int i=0; i<3; i++) {
+   for(int i=0; i<10; i++) {
 
     x = rand() & 0xFF;
     x |= (rand() & 0xFF) << 8;
     x |= (rand() & 0xFF) << 16;
     x |= (rand() & 0xFF) << 24;
 
-    cout << "x is " << x << endl;
+    cout << "Writing to pattern register: " <<  x << endl;
     
     salt_->write_salt(registers::pattern_cfg, x);
     
     salt_->read_salt(registers::pattern_cfg, &data);
-cout << " data is " << data << endl;
+    cout << "Reading from pattern register: " << data << endl;
     if(data!=x) return false;
 
   }
@@ -257,7 +257,7 @@ bool Dig_Clk_test::TFC_check() {
 
 
   // Reset TFC state machine and set all related registers to default values
-  fpga_->write_fpga(registers::TFC_CFG,0x01);
+  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
 
   // define single shot tyransmission
   bool singleShot = 1;
@@ -282,39 +282,46 @@ bool Dig_Clk_test::TFC_check() {
 
   // Read out data packet
   uint32_t length_read = 1; // number of clock cycles to read
-  uint32_t data = 0; // data packet
+  uint8_t data[5120]; // data packet
   uint32_t delay = 0; // clock delay
   int trigger = 1; // trigger aquisition
-  fastComm_->read_daq(delay,length_read,trigger,&data);
- 
-  if((data & 15) != 0xC) return false; // check sync4
-  if(((data >> 4) & 255) != 0xAA) return false; // check sync3
-  if(((data >> 12) & 255) != 0x55) return false; // check sync2
-  if(((data >> 20) & 255) != 0x99) return false; // check sync1
-  if(((data >> 28) & 255) != 0x0F) return false; // check sync0
+  fastComm_->read_daq(delay,length_read,trigger,data);
 
+  for(int i=0; i<length; i++){
+  if((data[5*i] & 15) != 0xC) return false; // check sync4
+  if(((data[5*i+1] >> 4) & 255) != 0xAA) return false; // check sync3
+  if(((data[5*i+2] >> 12) & 255) != 0x55) return false; // check sync2
+  if(((data[5*i+3] >> 20) & 255) != 0x99) return false; // check sync1
+  if(((data[5*i+4] >> 28) & 255) != 0x0F) return false; // check sync0
+  }
+  
   cout << "TFC sync completed" << endl;
 
   // Reset TFC registers and empty data buffers by doing an FEReset
   command[0]=0x02;
   length = 0x01;
   fastComm_->write_tfc(length, command, length, singleShot);
-  fastComm_->read_daq(delay,length_read,trigger,&data);
+  fastComm_->read_daq(delay,length_read,trigger,data);
   if(data != 0) return false; // check to make sure FEReset clears data buffers, otherwise chip is BAD
  
   // Check Header TFC command
   command[0]=0x04;
   fastComm_->write_tfc(length, command, length, singleShot);
-  fastComm_->read_daq(delay,length_read,trigger,&data);
+  fastComm_->read_daq(delay,length_read,trigger,data);
 
-  if((data & 15) != 9 || (data & 15) != 8) return false; // check header (should be more robust to make sure polarity is OK)
+  for(int i=0; i<5*length; i++) {
+  if((data[i] & 15) != 9 || (data[i] & 15) != 8) return false; // check header (should be more robust to make sure polarity is OK)
+  }
   cout << "Header command check finished" << endl;
 
   // Check BxVeto (should be same output as header command)
   command[0] = 0x10;
   fastComm_->write_tfc(length, command, length, singleShot);
-  fastComm_->read_daq(delay,length_read,trigger,&data);
-  if((data & 15) != 9 || (data & 15) !=8) return false; // check header (should be more robust to make sure polarity is OK)                                                 
+  
+  fastComm_->read_daq(delay,length_read,trigger,data);
+  for(int i=0; i<5*length; i++) {
+  if((data[i] & 15) != 9 || (data[i] & 15) !=8) return false; // check header (should be more robust to make sure polarity is OK)
+  }
   cout << "BxVeto command check finished" << endl;
 
   cout << "TFC checks finished" << endl;

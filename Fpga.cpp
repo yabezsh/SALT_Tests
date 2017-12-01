@@ -48,7 +48,19 @@ void Fpga::read(uint32_t* data)
   //  printf( "Data = 0x%08x  stays in the 0x%08lx\n ", data, register_address);     
 }
 
+void Fpga::read(uint8_t* data)
+{
+    *data = *( ( uint32_t *) map_register_address );
+  //  printf( "Data = 0x%08x  stays in the 0x%08lx\n ", data, register_address);     
+}
+
 void Fpga::read_fpga(uint32_t register_address,uint32_t* data)
+{
+    this->find_reg_address(register_address);
+    this->read(data);
+}
+
+void Fpga::read_fpga(uint32_t register_address,uint8_t* data)
 {
     this->find_reg_address(register_address);
     this->read(data);
@@ -59,7 +71,18 @@ void Fpga::write(uint32_t data)
     *( ( uint32_t *) map_register_address ) = data;
 }
 
+void Fpga::write(uint8_t data)
+{
+    *( ( uint32_t *) map_register_address ) = data;
+}
+
 void Fpga::write_fpga(uint32_t register_address,uint32_t data)
+{
+    this->find_reg_address(register_address);
+    this->write(data);
+}
+
+void Fpga::write_fpga(uint32_t register_address,uint8_t data)
 {
     this->find_reg_address(register_address);
     this->write(data);
