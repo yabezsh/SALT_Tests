@@ -45,6 +45,7 @@ class Fpga {
         void write(uint32_t);
 
 	void read(uint8_t*);
+	//		void read(uint32_t*);
         void write(uint8_t);
         
         void *map_virtual_addr;

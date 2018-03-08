@@ -98,13 +98,14 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
 */
 // test digital c
 
- cout << "FPGA" << endl;
+  
+ cout << "Defining FPGA" << endl;
  Fpga *fpga = new Fpga();
  cout << "SALT" << endl;
- Salt *st = new Salt(2,5);
- cout << "Fast comm" << endl;
+ Salt *st = new Salt(1,5);
+ cout << "Defining Fast comm" << endl;
  FastComm *fastComm = new FastComm(fpga);
- cout << "Dig comm" << endl;
+ cout << "Defining Dig comm" << endl;
  Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
 
  // I2C test
@@ -114,12 +115,19 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
  else
    cout << "I2C check FAILED" << endl;
  /*
+cout << "PLL configuration starting" << endl;
+ if(dig_com->PLL_Check())
+   cout << "PLL configuration OK" << endl;
+ else
+   cout << "PLL configuration FAILED" <<endl;
+ 
  cout << "DLL configuration starting" << endl;
  if(dig_com->DLL_Check())
    cout << "DLL configuration OK" << endl;
  else
    cout << "DLL configuration FAILED" <<endl;
-
+ 
+ 
 cout << "PLL configuration starting" << endl;
  if(dig_com->PLL_Check())
    cout << "PLL configuration OK" << endl;
@@ -129,11 +137,15 @@ cout << "PLL configuration starting" << endl;
  cout<< "Clk synch starting" << endl;
  dig_com->DAQ_Sync();
  
- cout << "Clk synch finished" <<endl;
-
+ //cout << "Clk synch finished" <<endl;
+ 
+ cout << "TFC check starting" << endl;
+ 
+ if(dig_com->TFC_check())
+   cout << "TFC OK" << endl;
+ else
+   cout << "TFC failed" << endl;
  */
-
-
  
 /*
 Salt *st = new Salt();

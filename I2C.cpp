@@ -54,7 +54,7 @@ void I2C::get_bus_access()
 
 void I2C::set_device_address(int8_t device_address) {
     I2C::device_address = device_address;
-    printf("Device address is :  0x%08x\n",device_address);
+    //printf("Device address is :  0x%08x\n",device_address);
 }
 
 void I2C::access_device()
@@ -109,6 +109,8 @@ void I2C::read_buffer(uint8_t register_address, uint16_t* data)
 
 void I2C::read_buffer(uint8_t register_address, uint8_t* data)
 {
+
+  //printf("setting buffer register address\n");
     uint8_t buffer[2] = {register_address, 0};
     if (write(bus, buffer, 1) != 1) {
         perror("Write register select");
