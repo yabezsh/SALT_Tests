@@ -326,44 +326,48 @@ namespace registers
   const int ped126_cfg            = 0x193;
   const int ped127_cfg            = 0x194;
   const int zs_channel_cfg        = 0x195;
-  const int dsp_seu_cnt_reg       = 0x196;
-  const int dsp_overflow_reg      = 0x197;
-  const int bxid_cnt0_reg         = 0x198;
-  const int bxid_cnt1_reg         = 0x199;
-  const int bxid_cnt0_snap_reg    = 0x19A;
-  const int bxid_cnt1_snapreg     = 0x19B;
-  const int trunc_cnt0_reg        = 0x19C;  
+  const int sync0_cfg             = 0x196;
+  const int sync1_cfg             = 0x197;
+  const int dsp_seu_cnt_reg       = 0x198;
+  const int dsp_overflow_reg      = 0x199;
+  const int bxid_cnt0_reg         = 0x19A;
+  const int bxid_cnt1_reg         = 0x19B;
+  const int bxid_cnt0_snap_reg    = 0x19C;
+  const int bxid_cnt1_snapreg     = 0x19D;
+  /*  const int trunc_cnt0_reg        = 0x19C;  
   const int trunc_cnt1_reg        = 0x19D;
   const int trunc_cnt2_reg        = 0x19E;
   const int trunc_cnt0_snap_reg   = 0x19F;
   const int trunc_cnt1_snap_reg   = 0x1A0;
   const int trunc_cnt2_snap_reg   = 0x1A1;
-			          
+  */
+ 			          
   // Memory		          
   const int mem_pack_cfg          = 0x500;
-  const int sync0_cfg             = 0x501;
-  const int sync1_cfg             = 0x502;
-  const int sync2_cfg             = 0x503;
-  const int sync3_cfg             = 0x504;
-  const int sync4_cfg             = 0x505;
+  const int sync0_cfg_old         = 0x501;
+  const int sync1_cfg_old         = 0x502;
+  const int sync2_cfg_old         = 0x503;
+  const int sync3_cfg_old         = 0x504;
+  const int sync4_cfg_old         = 0x505;
   const int elinks_cfg            = 0x506;
-  const int mem_seu_cnt_reg       = 0x507;
-  const int mem_space0_reg        = 0x508;
-  const int mem_space1_reg        = 0x509;
-  const int mem_space0_snap_reg   = 0x50A;
-  const int mem_space1_snap_reg   = 0x50B;
-  const int idle_cnt0_reg         = 0x50C;
-  const int idle_cnt1_reg         = 0x50D;
-  const int idle_cnt2_reg         = 0x50E;
-  const int idle_cnt3_reg         = 0x50F;
-  const int idle_cnt4_reg         = 0x510;
-  const int idle_cnt5_reg         = 0x511;
-  const int idle_cnt0_snap_reg    = 0x512;
-  const int idle_cnt1_snap_reg    = 0x513;
-  const int idle_cnt2_snap_reg    = 0x514;
-  const int idle_cnt3_snap_reg    = 0x515;
-  const int idle_cnt4_snap_reg    = 0x516;
-  const int idle_cnt5_snap_reg    = 0x517;
+  const int idle_cfg              = 0x507;
+  const int mem_seu_cnt_reg       = 0x508;
+  const int mem_space0_reg        = 0x509;
+  const int mem_space1_reg        = 0x50A;
+  const int mem_space0_snap_reg   = 0x50B;
+  const int mem_space1_snap_reg   = 0x50C;
+  const int idle_cnt0_reg         = 0x50D;
+  const int idle_cnt1_reg         = 0x50E;
+  const int idle_cnt2_reg         = 0x50F;
+  const int idle_cnt3_reg         = 0x510;
+  const int idle_cnt4_reg         = 0x511;
+  const int idle_cnt5_reg         = 0x512;
+  const int idle_cnt0_snap_reg    = 0x513;
+  const int idle_cnt1_snap_reg    = 0x514;
+  const int idle_cnt2_snap_reg    = 0x515;
+  const int idle_cnt3_snap_reg    = 0x516;
+  const int idle_cnt4_snap_reg    = 0x517;
+  const int idle_cnt5_snap_reg    = 0x518;
 			          
   // Serializer		          
   const int ser_source_cfg        = 0x000;
@@ -406,20 +410,18 @@ namespace registers
   const int slvs_vcm_cfg          = 0x318;
   const int bandgap0_cfg          = 0x319;
   const int bandgap1_cfg          = 0x31A;
-  const int vcm_cur0_cfg          = 0x31B;
+  const int vcm_cur_cfg           = 0x31B;
   const int vcm_cur1_cfg          = 0x31C;
   const int vcm_cur2_cfg          = 0x31D;
   const int vcm_cur3_cfg          = 0x31E;
-  const int dac_mon_cfg           = 0x31F;
+  const int mon_cfg               = 0x31F;
   const int other_seu_cnt_reg     = 0x320;
   const int dll_vcdl_mon          = 0x321;
   const int pll_vco_mon           = 0x322;
-  const int bandgap_mon           = 0x323;
-  const int temp_mon              = 0x324;
-  const int adc_test0_reg         = 0x325;
-  const int adc_test1_reg         = 0x326;
-  const int dac0_mon              = 0x327;
-  const int dac1_mon              = 0x328;
+  const int adc_test0_reg         = 0x323;
+  const int adc_test1_reg         = 0x324;
+  const int dac0_mon              = 0x325;
+  const int dac1_mon              = 0x326;
 			          
   // TFC counters	          
   const int tfc_seu_cnt_reg       = 0x400;

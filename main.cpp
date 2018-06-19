@@ -6,6 +6,7 @@
 #include "Salt.h"
 #include "fastComm.h"
 #include "Dig_Clk_test.h"
+#include "Ana_tests.h"
 
 #include "hwlib.h"
 #include "socal/socal.h"
@@ -108,6 +109,11 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
  cout << "Defining Dig comm" << endl;
  Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
 
+ Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
+
+ // st->write_salt(0x601,(uint8_t) 0x01);
+ //st->write_salt(0x600,(uint8_t) 0x01);
+ //st->write_salt(0x604,(uint8_t) 0x01);
  // I2C test
  cout << "I2C test starting" << endl;
  if(dig_com->I2C_check())
@@ -133,7 +139,7 @@ cout << "PLL configuration starting" << endl;
    cout << "PLL configuration OK" << endl;
  else
    cout << "PLL configuration FAILED" <<endl;
-
+ */
  cout<< "Clk synch starting" << endl;
  dig_com->DAQ_Sync();
  
@@ -145,7 +151,12 @@ cout << "PLL configuration starting" << endl;
    cout << "TFC OK" << endl;
  else
    cout << "TFC failed" << endl;
- */
+ 
+ ana_func->Check_noise();
+
+ ana_func->Check_NZS();
+ cout << "done " << endl;
+
  
 /*
 Salt *st = new Salt();

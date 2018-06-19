@@ -48,6 +48,12 @@ void Fpga::read(uint32_t* data)
     
 }
 
+void Fpga::read(uint64_t* data)
+{
+    *data = *( ( uint32_t *) map_register_address );
+    
+}
+
 void Fpga::read(uint8_t* data)
 {
     *data = *( ( uint32_t *) map_register_address );
@@ -55,6 +61,13 @@ void Fpga::read(uint8_t* data)
 
 
 void Fpga::read_fpga(uint32_t register_address,uint32_t* data)
+{
+    this->find_reg_address(register_address);
+    //std::cout << "Reg address = " << std::hex << unsigned(register_address) << std::endl;
+    this->read(data);
+}
+
+void Fpga::read_fpga(uint32_t register_address,uint64_t* data)
 {
     this->find_reg_address(register_address);
     //std::cout << "Reg address = " << std::hex << unsigned(register_address) << std::endl;
@@ -77,6 +90,11 @@ void Fpga::write(uint8_t data)
     *( ( uint8_t *) map_register_address ) = data;
 }
 
+void Fpga::write(uint16_t data)
+{
+    *( ( uint8_t *) map_register_address ) = data;
+}
+
 void Fpga::write_fpga(uint32_t register_address,uint32_t data)
 {
     this->find_reg_address(register_address);
@@ -84,6 +102,11 @@ void Fpga::write_fpga(uint32_t register_address,uint32_t data)
 }
 
 void Fpga::write_fpga(uint32_t register_address,uint8_t data)
+{
+    this->find_reg_address(register_address);
+    this->write(data);
+}
+void Fpga::write_fpga(uint32_t register_address,uint16_t data)
 {
     this->find_reg_address(register_address);
     this->write(data);
