@@ -151,6 +151,10 @@ cout << "PLL configuration starting" << endl;
    cout << "TFC OK" << endl;
  else
    cout << "TFC failed" << endl;
+
+ cout << "Baseline correction starting" << endl;
+ ana_func->Baseline_corr();
+ cout << "Baseline correction finished" << endl;
  
  ana_func->Check_noise();
 
