@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ctime>
 #include <fstream>
+
 using namespace std;
 
 // CONSTRUCTOR
@@ -15,6 +16,7 @@ Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, FastComm *fastComm) {
    fpga_=fpga;
   salt_=salt;
   fastComm_=fastComm;
+ 
 }
 
 // Synch output of DAQ to clock
@@ -364,166 +366,15 @@ bool Dig_Clk_test::TFC_check() {
   
    else cout << "TFC Chip sync OK" << endl;
 
+   unmask_all();
 
-  //  return false;
-  // define single shot transmission
-  bool singleShot = true;
-  uint8_t commands = 0x00;
- 
-  uint64_t data64[5120] = {0};
-  salt_->write_salt(0x507,(uint8_t) 0x01);
-  //salt_->write_salt(registers::ped_g_cfg,(uint8_t) 0x8F);
-  salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
-  salt_->write_salt(registers::n_zs_cfg,(uint8_t) 0x00); // data after ped
-  //   salt_->write_salt(registers::sync0_cfg,(uint8_t) 0xAB);
-  // salt_->write_salt(registers::sync1_cfg,(uint8_t) 0xFB);
-  singleShot=true;
-  length=200;
-  period=200;
-  for(int i=0; i<79; i++)
-    command[i]=0x04;
-
-  command[79]=0x08;
-  // command[79]=0x00;
-  //command[79]=0x80;
-  length_read=250;
-  string data_string;
-  float avg_ADC[128] = {0};
-  int ADC[128] = {0};
-  int bxid = 0;
-  int parity = 0;
-  int mcm_v = 0;
-  int mcm_ch = 0;
-  int mem_space = 0;
-  int flag = 0;
-  int runs = 256;
-  int length1= 0;
-  unsigned twelveBits;
-  int largest=0;
-
-  double v[runs][128] = {0};
-  
-  
-  // make sure all channels are unmasked
-  unmask_all();
-  int avg  = 0;
-
-    return false;
-  salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X84);
-  
-  for(int i=0; i<runs; i++) {
-    cout << "run = " << dec << i << endl;
-    salt_->write_salt(registers::baseline_g_cfg,(uint8_t) i);
-    for(int k=0; k<100; k++) {
       
-      
-      fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );     
-      
-      // read 12 bits at a time
-      for(int j=0; j<data_string.length(); j+=3) {
-	twelveBits = fastComm_->read_twelveBits(data_string, j);
-	fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
-	
-	
-	if(flag==0) {
-	  cout << "bxid = " << bxid << endl;
-	  cout << "parity = " << parity << endl;
-	  cout << "flag = " << flag << endl;
-	  cout << "length = " << dec << length1 << endl;
-	  if(length1==0) break;
-	  
-	  fastComm_->read_Normal_packet(data_string, j, ADC);
-	  break;
-	}
-	
-	
-	if(length1==6) {
-	  // cout << "bxid = " << bxid << endl;
-	// cout << "parity = " << parity << endl;
-	// cout << "flag = " << flag << endl;
-	// cout << "length = " << length1 << endl;
-	  fastComm_->read_NZS_packet(data_string, j, ADC, bxid, parity, mcm_v, mcm_ch, mem_space);
-	  break;
-	}
-	
-      }
-      
-      for(int j=0; j<128; j++) {
-	v[i][j]+=ADC[j]/100.;
-	ADC[j]=0;
-      }     
-    }
-    
-  }
-  
-  for(int i=0; i<runs; i++ ) {
-    for(int j=0; j<128; j++) {
-      cout << dec << v[i][j] << ", ";//endl;
-    }
-    cout << endl;
-  }
-  return false;
-  
-  // cout << "TFC sync completed" << endl;
-  salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);//0x08);
-
-  for(int i=0; i<255; i++) {
-    
-  //data={0};
-    // Reset TFC registers and empty data buffers by doing an FEReset
-  command[0]=0xAB;
-  //command[1]=0x01;
-  //cout << "command is " << hex << unsigned(command[0]) << endl;
-  //fastComm_->write_tfc(length, command, length, singleShot);
-  //fastComm_->read_daq(delay,length_read,trigger,data);
-   //if((data[0] & 0x000000FF) != 0x000000FF) {
-     // cout << "TFC_main data[" << i << "] = " << hex << unsigned(data[0]) << endl;
-     cout << "TFC_main data[" << i << "] = " << hex << unsigned(data[i]) << endl;
-     //}
-   salt_->write_salt(registers::tfc_fifo_cfg,(uint8_t) i);
-   usleep(100);
-  
-}
- 
-  bool tfc_reset_fail=false;
-  /*for(int i=0; i<length_read; i++){
-    cout << "i is " << i << endl;
-    cout << "data[i] = " << hex << unsigned(data[i]) << endl;
-    /*  
-  if((data[3*i] & 15) != 0xC) return false; // check sync4
-  if(((data[3*i+1] >> 4) & 255) != 0xAA) return false; // check sync3
-  if(((data[3*i+2] >> 12) & 255) != 0x55) return false; // check sync2
-  if(((data[i+3] >> 20) & 255) != 0x99) return false; // check sync1
-  if(((data[i+4] >> 28) & 255) != 0x0F) return false; // check sync0
-  
-    if((0x00FFFFFF & data[i])!=0) tfc_reset_fail=true;
-  }
-  */
-  if(tfc_reset_fail) return false; // check to make sure FEReset clears data buffers, otherwise chip is BAD
- 
-  // Check Header TFC command
-  command[0]=0x04;
-  //fastComm_->write_tfc(length, command, length, singleShot);
-  //fastComm_->read_daq(delay,length_read,trigger,data);
-
-  for(int i=0; i<5*length; i++) {
-  if((data[i] & 15) != 9 || (data[i] & 15) != 8) return false; // check header (should be more robust to make sure polarity is OK)
-  }
-  cout << "Header command check finished" << endl;
-
-  // Check BxVeto (should be same output as header command)
-  command[0] = 0x10;
-  //fastComm_->write_tfc(length, command, length, singleShot);
-  
-  //fastComm_->read_daq(delay,length_read,trigger,data);
-  for(int i=0; i<5*length; i++) {
-  if((data[i] & 15) != 9 || (data[i] & 15) !=8) return false; // check header (should be more robust to make sure polarity is OK)
-  }
-  cout << "BxVeto command check finished" << endl;
-
-  cout << "TFC checks finished" << endl;
-  return true;
-
+   return false;
+   
+   
+   cout << "TFC checks finished" << endl;
+   return true;
+   
 }
 
 // sync between TFC and chip
@@ -687,8 +538,18 @@ bool Dig_Clk_test::DAQ_Delay() {
     
     
   }
-    return rightConfig;
+
+  command[0]=0x80;
+  command[1]=command[0];
+  command[2]=command[0];
+  for(int i=0; i<256; i++) {
+
+    salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) i);
+
+    
   }
+    return rightConfig;
+}
   
 uint8_t Dig_Clk_test::randomPattern() {
 
@@ -725,4 +586,91 @@ void Dig_Clk_test::unmask_all() {
   salt_->write_salt(registers::mask13_cfg,(uint8_t) 0x00);
   salt_->write_salt(registers::mask14_cfg,(uint8_t) 0x00);
   salt_->write_salt(registers::mask15_cfg,(uint8_t) 0x00);
+}
+
+
+bool Dig_Clk_test::TFC_Command_Check() {
+  
+  uint8_t command[max_commands]={0};
+  uint8_t length = 90;
+  uint16_t length_read = 150;
+  string data_string;
+  bool singleShot = true;
+  int period = length;
+  int flag = 0;
+  int length1 = 0;
+  int bxid = 0;
+  int parity = 0;
+  uint8_t buffer;
+  unsigned twelveBits;
+  unmask_all();
+  
+  // check TFC commands
+  string option[8];
+  bool pass[8] = {false};
+  option[0] = "Normal";
+  option[1] = "BXReset";
+  option[2] = "Header";
+  option[3] = "NZS";
+  option[4] = "BxVeto";
+  option[5] = "Snapshot";
+  option[6] = "Synch";
+  option[7] = "FEReset";
+  
+  
+  for(int i=0; i<79; i++)
+    command[i]=0x04;
+  
+  if(option[0] == "Normal")        command[79] = 0x00;
+  else if(option[0] == "BXReset")  command[79] = 0x01;
+  else if(option[0] == "FEReset")  command[79] = 0x02;
+  else if(option[0] == "Header")   command[79] = 0x04;
+  else if(option[0] == "NZS")      command[79] = 0x08;
+  else if(option[0] == "BxVeto")   command[79] = 0x10;
+  else if(option[0] == "Snapshot") command[79] = 0x20;
+  else if(option[0] == "Synch")    command[79] = 0x40;
+  
+  for(int j=0; j<data_string.length(); j+=3) {
+    twelveBits = fastComm_->read_twelveBits(data_string, j);
+    fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
+    
+    if(flag == 0) {
+      if(option[0] == "Normal") pass[0] = true;
+      if(option[0] == "BXReset" && bxid == 0) pass[0] = true; 
+      
+    }
+    if(flag == 1) {
+      
+      if(length1 == 0x11 && option[0] == "BxVeto") pass[0] = true;
+      if(length1 == 0x12 && option[0] == "Header") pass[0] = true;
+      if(length1 == 0x06 && option[0] == "NZS") pass[0] = true;
+      
+      
+      // if(option[i] == "BXReset") {
+      // 	 salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
+      // 	 if(buffer == 0x00
+      // }
+    }
+    
+    if(option[0] == "FEReset") {
+      salt_->read_salt(registers::header_cnt0_reg, &buffer);
+      if(buffer == 0x00) pass[0] = true;
+      
+    }
+    
+  }
+
+  int j=0;
+  //for(int i = 0; i < 8) {
+    
+  //  if(!pass[0]) {
+  //    cout << "ERROR::TFC " << option[0] << "fails" << endl;
+  //    j++;
+  //  }
+  // }
+  
+  if(j>0) return false;
+  
+  return true;
+  
 }

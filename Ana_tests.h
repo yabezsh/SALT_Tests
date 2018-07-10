@@ -19,14 +19,20 @@ class Ana_tests {
   Ana_tests(Fpga*, Salt*, FastComm*);
   ~Ana_tests(){};
 
-  void Get_run(string option, int runs, bool output, string outText);
+  bool Get_run(string option, int runs, bool output, string outText);
   void output_file(int runs, float avg_ADC[], float avg_chip[], float avg_noise, float length_avg, string outText, string option);
     void Trim_dac_scan();
+    void Check_Gain();
   void Check_noise();
   void Check_NZS();
   void Baseline_corr();
-  float calculateSD(float data[]);
+  float calculateSD(float data[], int runs);
   float m_avg_adc[128];
+  float mcm_ch;
+  float mcm_v;
+  bool Check_PedS();
+  bool Check_MCMS();
+  bool Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v);
 
 
   private:

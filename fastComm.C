@@ -413,16 +413,18 @@ void FastComm::read_NZS_packet(string data, int startBit, int (&ADC)[128], int &
   mcm_ch = (dsp_mon & 0x3FC00) >> 10;
   mem_space = (dsp_mon & 0x3FE) >> 1;
   
-  //cout << "mcm_v = " << dec << mcm_v << endl;
-  //cout << "mcm_ch = " << dec << mcm_ch << endl;
-  //cout << "mem_space = " << dec << mem_space << endl;
+   if(mcm_ch != 0 && mcm_v != 0) {
+  cout << "mcm_v = " << dec << mcm_v << endl;
+  cout << "mcm_ch = " << dec << mcm_ch << endl;
+  cout << "mem_space = " << dec << mem_space << endl;
+  }
   
-
   for(int i=startBit+9; i < data.length(); i+=3) {
-    //cout << " i is " << dec << i << endl;
+
+    // read twelve bits at a time
     twelveBits = read_twelveBits(data, i);
-    //cout << "twelve bits in nzs = " << hex << twelveBits << endl;  
-      
+
+    // get 
     ADC[2*j]=(twelveBits &  0xFC0) >> 6;
     ADC[2*j+1] = (twelveBits & 0x3F);
 
@@ -440,4 +442,4 @@ void FastComm::read_NZS_packet(string data, int startBit, int (&ADC)[128], int &
   }
   
 }
-//, uint4_t &bxid)//, uint8_t &mcm_v, uint8_t &mcm_ch, uint16_t &mem_space_par, uint8[t] (&adc)[128]) {
+

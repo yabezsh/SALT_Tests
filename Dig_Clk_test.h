@@ -31,6 +31,7 @@ class Dig_Clk_test {
   bool PLL_Check();
   bool I2C_check();
   bool TFC_check();
+  bool TFC_Command_Check();
   bool TFC_DAQ_sync();
   bool DAQ_Delay();
   uint8_t randomPattern();

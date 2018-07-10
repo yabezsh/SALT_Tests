@@ -152,13 +152,39 @@ cout << "PLL configuration starting" << endl;
  else
    cout << "TFC failed" << endl;
 
+
+ 
+ 
  cout << "Baseline correction starting" << endl;
  ana_func->Baseline_corr();
  cout << "Baseline correction finished" << endl;
- 
- ana_func->Check_noise();
+
 
  ana_func->Check_NZS();
+ 
+ ana_func->Check_noise();
+ 
+//
+ 
+  cout << "Checking Pedestal subtraction" << endl;
+  if(ana_func->Check_PedS())
+    cout << "Ped substraction OK" << endl;
+  else
+    cout << "Ped substraction failed" << endl;
+
+
+  
+  if(ana_func->Check_MCMS())
+    cout << "MCM sub4traction OK" << endl;
+  else
+    cout << "MCM failed" << endl;
+  
+ //ana_func->Check_noise();
+ 
+ //ana_func->Check_NZS();
+ 
+ //cout << "Calibration run" << endl;
+ //ana_func->Check_Gain();
  cout << "done " << endl;
 
  
