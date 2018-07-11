@@ -265,13 +265,28 @@ void Ana_tests::Check_noise() {
 bool Ana_tests::Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v) {
 
   int mcm_ch_calc=0;
+  int mcm_v_calc=0;
   
   for(int i=0; i < 128; i++) {
     if((ADC[i] >= mcm2) && (ADC[i] < mcm1)) mcm_ch_calc++;
+    
   }
 
+
+
+  
   if(mcm_ch_calc != mcm_ch) return false;
 
+  for(int i=0; i < 128; i++) {
+    
+    if((ADC[i] >= mcm2) && (ADC[i] < mcm1)) mcm_v_calc=+ADC[i]/mcm_ch;
+    
+    
+  }
+
+  if(abs(mcm_v-mcm_v_calc)>1 ) return false;
+    
+  
   return true;
 }
 
