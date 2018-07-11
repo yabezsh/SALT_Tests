@@ -97,24 +97,18 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
 	  break;
 	}
 	
-	if(length1 == 0 || length1 == 3) continue;
-	if(length1 == 1 && option == "BxVeto") cout << "BxVeto OK" << endl;
-	if(length1 == 2 && option == "Header") cout << "Header OK" << endl;
-	if(length1 == 4 || length1 == 5) {
-	  
-	  continue;
-	}
+	if(length1 == 0x30 || length1 == 0x13 || length1 == 0x14 || length1 == 0x15) continue;
+	
 	if(length1 == 6) {
 	  
 	  length_avg+=length1/((float) runs);
-	  fastComm_->read_NZS_packet(data_string, j, ADC, bxid, parity, mcm_v, mcm_ch, mem_space);
+	  fastComm_->read_NZS_packet(data_string, j, ADC, bxid, parity, m_mcm_v, m_mcm_ch, mem_space);
 	  break;
 	}
 	
       }
       
       for(int j=0; j<128; j++) {
-	v[i][j]+=ADC[j]/((float)runs);
 	avg_ADC[127-j]+=ADC[j]/((float)runs);
 	avg_chip[i]+=ADC[127-j]/(128.);
 	ADC[j]=0;
@@ -127,7 +121,25 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
       if(m_avg_adc[i] !=0 && k>0) cout << "k=" << dec << k << endl;
     }
     
-  } 
+  }
+  /*
+  // output noise parameters to screen if doing a noise run
+  if(outText == "noise_sync_ADC") {
+
+    cout << "Raw: noise = " << 
+    
+  }
+  if(outText == "noise_after_ped") {
+
+    
+    
+  }
+  if(outText == "noise_after_mcm") {
+
+    
+    
+  }
+  */
   output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
   
   return true;
@@ -163,6 +175,10 @@ void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float a
 // baseline corrections through trim dac
 void Ana_tests::Baseline_corr() {
 
+  salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
+
+
+  
   ofstream outfile, trimdac_scan;
   outfile.open("Baseline_value.txt");
   trimdac_scan.open("Trim_DAC_scan.txt");
@@ -215,23 +231,14 @@ void Ana_tests::Check_noise() {
   string outText;
   uint8_t buffer=0x00;
 
-  // set mcms thresholds to smallest value
+  // set mcms thresholds to smallest and largets value
   salt_->write_salt(registers::mcm_th_cfg, (uint8_t) 0x1F);
   salt_->write_salt(registers::mcm_th2_cfg, (uint8_t) 0x20);
 
-  cout << "PERFORMING NOISE CHECK" << endl;
-
-  
   // DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
 
-  for(int i = 0; i < 128; i++) {
-
-    salt_->read_salt((registers::ped0_cfg) + i, &buffer);
-        cout << "ped[" << dec << i <<"] = " << dec << (unsigned) buffer << endl;
-    
-  }
-
+  
   // loop over different data streams, i.e. masked ADC, sync ADC, after ped, after mcms
   for(int i = 0; i < 4; i++) {
 
@@ -262,40 +269,44 @@ void Ana_tests::Check_noise() {
   
 }
 
+// checks mcmch and mcm_v
 bool Ana_tests::Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v) {
 
   int mcm_ch_calc=0;
   int mcm_v_calc=0;
-  
-  for(int i=0; i < 128; i++) {
+
+  // check that expected and calculated mcm_ch are equal
+  for(int i=0; i < 128; i++) 
     if((ADC[i] >= mcm2) && (ADC[i] < mcm1)) mcm_ch_calc++;
-    
-  }
-
-
-
   
-  if(mcm_ch_calc != mcm_ch) return false;
-
-  for(int i=0; i < 128; i++) {
-    
-    if((ADC[i] >= mcm2) && (ADC[i] < mcm1)) mcm_v_calc=+ADC[i]/mcm_ch;
-    
-    
+  if(mcm_ch_calc != mcm_ch) {
+    cout << "ERROR::Calculated and expected MCM channel not equal" << endl;
+    cout << "mcm_ch_calc = " << dec << mcm_ch_calc << endl;
+    cout << "mcm_ch = " << dec << mcm_ch << endl;
+    return false;
   }
 
-  if(abs(mcm_v-mcm_v_calc)>1 ) return false;
-    
+  // check that expected and calculated mcm_value are equal
+  for(int i=0; i < 128; i++) 
+    if((ADC[i] >= mcm2) && (ADC[i] < mcm1)) mcm_v_calc=+ADC[i]/mcm_ch;
+  
+  if(abs(mcm_v-mcm_v_calc)>1 ) {
+    cout << "ERROR::Calculated and expected MCM value not equal" << endl;
+    cout << "mcm_v_calc = " << dec << mcm_v_calc << endl;
+    cout << "mcm_v = " << dec << mcm_v << endl;
+    return false;
+  }
   
   return true;
 }
 
+// loop over mcm thresholds and check if MCMS works properly
 bool Ana_tests::Check_MCMS() {
   
   int mcm1, mcm2;
   
-  // set to ADC after MCMS mode
-  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
+  // set to ADC after Ped mode
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x40);
   
   for(int i = 0; i < 64; i++) {
     
@@ -314,10 +325,11 @@ bool Ana_tests::Check_MCMS() {
       
       salt_->write_salt(registers::mcm_th2_cfg, (uint8_t) j);
       
-      Get_run("NZS",1,true,"noise_after_mcm");
-      //cout << "ERROR:MCMS FAILED" << endl;
-      if(!Check_MCMS(m_avg_adc, mcm1, mcm2, mcm_ch, mcm_v))
+      Get_run("NZS",1,true,"mcm_test");
+      
+      if(!Check_MCMS(m_avg_adc, mcm1, mcm2, m_mcm_ch, m_mcm_v)) 
 	return false;
+      
     }
     
   }
@@ -347,7 +359,7 @@ bool Ana_tests::Check_PedS() {
 
     salt_->write_salt(registers::ped_g_cfg, (uint8_t) ped);
 
-    Get_run("NZS",10,true,"noise_after_ped");
+    Get_run("NZS",10,true,"ped_test");
    
     ped = i;
     if(i >= 32) 
@@ -366,51 +378,47 @@ bool Ana_tests::Check_PedS() {
   }
   
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x20);
+  salt_->write_salt(registers::ped_g_cfg, (uint8_t) 0x00);
   outfile.close();
   return flag;
   
 }
 
 // Check ZS threshold
-void Ana_tests::Check_NZS() {
-  
-  cout << "DOING NZS TEST" << endl;
-  
+bool Ana_tests::Check_NZS() {
+    
   stringstream outText; 
-
-  uint8_t n_zs_cfg = 0x20;
+  uint8_t n_zs = 0x20;
   
   for(int i = 0; i < 32; i++) {
 
-    n_zs_cfg = n_zs_cfg | i;
-    // Set ZS threshold to i
-    salt_->write_salt(registers::n_zs_cfg, n_zs_cfg);
-
-    // Take a runs
-    Get_run("Normal",1,true,"no_output");
+    // set ZS threshold
+    n_zs = n_zs | i;
+    salt_->write_salt(registers::n_zs_cfg, n_zs);
+    
+    // Take a run
+    Get_run("Normal",1,true,"no_out");
 
     // Check that no channel has hits above the threshold
     for(int k = 0; k < 128; k++) {      
-
       
       if(m_avg_adc[k] < i && m_avg_adc[k]>0) {
-	cout << "ERROR: ZS FAIL" << endl;
-	return;
+	cout << "ERROR: Hits below ZS threshold" << endl;
+	return false;
       }
       
     }
-
+    
     // take 100 runs and save result
     outText << "nzs_th_" << dec << i;
-    
     Get_run("Normal",100,true,outText.str());
-    
     outText.str("");
   }
 
   // revert threshold to 0
   salt_->write_salt(registers::n_zs_cfg,(uint8_t) 0);
-  
+
+  return true;
 }
 
 float Ana_tests::calculateSD(float data[], int runs) {

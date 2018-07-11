@@ -406,18 +406,18 @@ void FastComm::read_NZS_packet(string data, int startBit, int (&ADC)[128], int &
   int j=0;
     
   // read DSP monitoring bits
-  dsp_mon = read_twelveBits(data, startBit+3) << 3;
+  dsp_mon = read_twelveBits(data, startBit+3) << 12;
   dsp_mon = dsp_mon | read_twelveBits(data, startBit+6);
   
-  mcm_v = (dsp_mon & 0xFC0000) >> 18;
+  mcm_v = (dsp_mon & 0xFC000) >> 18;
   mcm_ch = (dsp_mon & 0x3FC00) >> 10;
   mem_space = (dsp_mon & 0x3FE) >> 1;
   
-   if(mcm_ch != 0 && mcm_v != 0) {
-  cout << "mcm_v = " << dec << mcm_v << endl;
-  cout << "mcm_ch = " << dec << mcm_ch << endl;
-  cout << "mem_space = " << dec << mem_space << endl;
-  }
+  // if(mcm_ch != 0 ) {
+  //   cout << "mcm_v = " << dec << mcm_v << endl;
+  //   cout << "mcm_ch = " << dec << mcm_ch << endl;
+  //   cout << "mem_space = " << dec << mem_space << endl;
+  // }
   
   for(int i=startBit+9; i < data.length(); i+=3) {
 

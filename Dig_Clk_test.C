@@ -164,93 +164,44 @@ bool Dig_Clk_test::DLL_Check() {
   uint8_t read=0;
 
 
-  // ---------- FOR SALT8 ----------
   cout << "Setting dll_cp_cfg to default value: 0x9A" << endl;
-  salt_->read_salt(registers::dll_cp_cfg, &read);
-  if(read != 0x9A) 
-    salt_->write_salt(registers::dll_cp_cfg,(uint8_t) 0x9A);
-  usleep(100);
-
-  cout << "Enabling DLL" << endl;
-  salt_->write_salt(0x301, (uint8_t) 0x80);
-  usleep(100);
-
-  //salt_->write_salt(0x303, (uint8_t) 0x9A);
-  usleep(100);
-  
-  // salt_->write_salt(0x301, (uint8_t) 0xE0);
-  //usleep(100);
-  //salt_->write_salt(0x301, (uint8_t) 0x20);
-  //usleep(1000);
-  
-  //salt_->write_salt(0x303, (uint8_t) 0x9A);
-  // -------------------------------
-
-  
-  /* 
-  // Set correct value of CP current
-  command = 0x9A;
-  salt_->write_salt(registers::dll_cp_cfg, command);
-  //cout << "test1" << endl;
-  // Set dll_vcdl_cfg to start value
-  uint8_t init = 0x60;
-  salt_->write_salt(registers::dll_vcdl_cfg, init);
-  //cout << "test2" << endl;
-  // Wait 1 us
+  salt_->read_salt(registers::dll_vcdl_cfg, &read);
+  if(read != 0x60) 
+    salt_->write_salt(registers::dll_vcdl_cfg,(uint8_t) 0x60);
   usleep(1);
-  //cout << "test3" << endl;
-  // Read dll_cur_ok bit from dll_vcdl_mon and make sure it is 0, otherwise increase start value of dll_vcdl_cfg
-  //salt_->read_salt(chipID, registers::dll_cur_ok, &data);
 
-  bool fail=true;
-  for(int i=0; i<1000; i++) {
-    //  while(1 == 1) {
-    salt_->read_salt(registers::dll_vcdl_mon, &data);
-    if((data & 0b1000000) == 0) {fail=false; break;}
-    init++;
-    salt_->write_salt(registers::dll_vcdl_cfg, init);
-}
-  // cout << "test4" << endl;
-  if(fail) {cout << "failed after 1000 times" << endl; return false;}
-  cout << "data is : " << hex << (unsigned(data) &0b1000000) << endl;
+  salt_->read_salt(registers::dll_vcdl_mon, &read);
+
+  while((read & 0x80) != 0x00) {
+
+    salt_->read_salt(registers::dll_vcdl_cfg, &read);
+    read++;
+    salt_->write_salt(registers::dll_vcdl_cfg,read);
+    //salt_->read_salt(registers::dll_vcdl_cfg, &read);
+    salt_->read_salt(registers::dll_vcdl_mon, &read);
+  }
+
+  salt_->read_salt(registers::dll_vcdl_cfg, &read);
+  read=read-1;
+  salt_->write_salt(registers::dll_vcdl_cfg,read);
   
-  while((data & 0b1000000) != 0) {
-
-    // cout << "data is : " << hex << unsigned(data) << endl;
-    //cout << "init is : " << hex << unsigned(init) << endl;
-    init--;
+  usleep(1);
+  
+  salt_->read_salt(registers::dll_vcdl_mon, &read);
+  
+  while((read & 0x80) == 0x00) {
+    salt_->read_salt(registers::dll_vcdl_cfg, &read);
+    read=read-1;
+    salt_->write_salt(registers::dll_vcdl_cfg,read);
     
-    salt_->write_salt(registers::dll_vcdl_cfg, init);
-
-    //    I2C_WRITE("Other", "dll_vcdl_cfg", init);
-    
-   // Wait 1 us
     usleep(1);
-    salt_->read_salt(registers::dll_vcdl_mon, &data);
     
-  }
-  //cout << "test5" << endl;
-
-  // start synch process
-  command = 0x40;
-  salt_->write_salt(registers::others_g_cfg, command);
-  //I2C_WRITE("Other", "others_g_cfg", 0x40); // set dll_start to 1
-
-  // read dll_vcdl_voltage. if = 0 then pass, otherwise fail
-  salt_->read_salt(registers::dll_vcdl_mon, &data);
-  uint8_t value = data;
-
-  //I2C_READ("Other", "dll_vcdl_mon");
-
-
-  for(int B=0; B<6; B++) {
-    if( (value>>B & 0x01) != 0 ) 
-      return false;
+    salt_->read_salt(registers::dll_vcdl_mon, &read);
   }
 
+  
   return true;
-  */	
-
+  
 }
 
 bool Dig_Clk_test::PLL_Check() {
@@ -261,36 +212,16 @@ bool Dig_Clk_test::PLL_Check() {
   // Make sure PLL enabled and configured
   salt_->read_salt(registers::pll_main_cfg, &data);
 
-  if(data != 0x8D){
-    command=0x8D;
-      salt_->write_salt(registers::pll_main_cfg, command);
-      
-  }
-  // Make sure pll_cp_cfg is set to default b10011010
-  salt_->read_salt(registers::pll_cp_cfg, &data);
-  cout << "data is " << hex<<unsigned(data) << endl;
-  if(data != 0x9A) {
-    command = 0x9A;
-    salt_->write_salt(registers::pll_cp_cfg, command);
-  }
-  // Read pll_vco_cfg and make sure approx 0
-  /*
-  while(1 == 1) {
+  if(data != 0x8C)
+    command=0x8C;
+  salt_->write_salt(registers::pll_main_cfg, command);
+  command=0xCC;
+  salt_->write_salt(registers::pll_main_cfg, command);
 
-    salt_->read_salt(registers::pll_vco_cfg, &data);
-
-    if(abs(data) < 3) break;
-
-    if(data > 3) data--;  
-    else if (data < -3) data++;
-
-//    salt_->write_salt(chipID_, registers::pll_vco_cur, data);
-
-  }
-  */
-  return 1;
-
+  return true;    
+    
 }
+
 
 bool Dig_Clk_test::I2C_check() {
 
@@ -366,7 +297,7 @@ bool Dig_Clk_test::TFC_check() {
   
    else cout << "TFC Chip sync OK" << endl;
 
-   unmask_all();
+  //unmask_all();
 
       
    return false;

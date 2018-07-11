@@ -126,7 +126,7 @@ cout << "PLL configuration starting" << endl;
    cout << "PLL configuration OK" << endl;
  else
    cout << "PLL configuration FAILED" <<endl;
- 
+ */
  cout << "DLL configuration starting" << endl;
  if(dig_com->DLL_Check())
    cout << "DLL configuration OK" << endl;
@@ -139,7 +139,7 @@ cout << "PLL configuration starting" << endl;
    cout << "PLL configuration OK" << endl;
  else
    cout << "PLL configuration FAILED" <<endl;
- */
+ 
  cout<< "Clk synch starting" << endl;
  dig_com->DAQ_Sync();
  
@@ -160,7 +160,7 @@ cout << "PLL configuration starting" << endl;
  cout << "Baseline correction finished" << endl;
 
 
- ana_func->Check_NZS();
+ //ana_func->Check_NZS();
  
  ana_func->Check_noise();
  
@@ -168,14 +168,14 @@ cout << "PLL configuration starting" << endl;
  
   cout << "Checking Pedestal subtraction" << endl;
   if(ana_func->Check_PedS())
-    cout << "Ped substraction OK" << endl;
+    cout << "Ped subtraction OK" << endl;
   else
-    cout << "Ped substraction failed" << endl;
+    cout << "Ped subtraction failed" << endl;
 
 
   
   if(ana_func->Check_MCMS())
-    cout << "MCM sub4traction OK" << endl;
+    cout << "MCM subtraction OK" << endl;
   else
     cout << "MCM failed" << endl;
   

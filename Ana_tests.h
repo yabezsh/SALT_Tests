@@ -24,12 +24,12 @@ class Ana_tests {
     void Trim_dac_scan();
     void Check_Gain();
   void Check_noise();
-  void Check_NZS();
+  bool Check_NZS();
   void Baseline_corr();
   float calculateSD(float data[], int runs);
   float m_avg_adc[128];
-  float mcm_ch;
-  float mcm_v;
+  int m_mcm_ch;
+  int m_mcm_v;
   bool Check_PedS();
   bool Check_MCMS();
   bool Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v);
