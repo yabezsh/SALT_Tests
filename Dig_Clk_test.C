@@ -20,7 +20,7 @@ Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, FastComm *fastComm) {
 }
 
 // Synch output of DAQ to clock
-void Dig_Clk_test::DAQ_Sync() {
+bool Dig_Clk_test::DAQ_Sync() {
   bool all_elink = false;
   uint32_t data[5120];
   //else {uint8_t data[5120];};
@@ -57,9 +57,7 @@ void Dig_Clk_test::DAQ_Sync() {
 	  
 	  bs_p[0] = i;
 	  bs_p[1] = j;
-	  
-	  
-	  cout << "FPGA Clock Synch finished" << endl;
+	 	 
 	  found_opt = true;
 	  
 	  break;
@@ -85,6 +83,8 @@ void Dig_Clk_test::DAQ_Sync() {
    
   if(!found_opt) cout << "CLK synch failed: Could not find optimal bit slip/phase" << endl;
   else cout << "CLK synch finished. Optimal values = " <<bs_p[0]  << ", " << bs_p[1] << endl; 
+
+  return found_opt;
   
 }
 
@@ -287,7 +287,7 @@ bool Dig_Clk_test::TFC_check() {
   // Reset TFC state machine and set all related registers to default values
   cout << "Reset state machine and set all registers to default values" << endl;
   fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
-  usleep(1000);
+  usleep(100);
   fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
   cout << "Reset complete" << endl;
 
@@ -340,35 +340,25 @@ bool Dig_Clk_test::TFC_DAQ_sync() {
   c[6]=0xAB;
   */
   // Reset TFC state machine and set all related registers to default values
-  cout << "Reset state machine and set all registers to default values" << endl;
-  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
-  usleep(1000);
-  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
-  cout << "Reset complete" << endl;
+  // cout << "Reset state machine and set all registers to default values" << endl;
+  // fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
+  // usleep(1000);
+  // fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
+  // cout << "Reset complete" << endl;
 
   // Set DAQ delay to 0
   fpga_->write_fpga(registers::DAQ_DELAY, (uint8_t) 0x00);
   // set DAQ to DSP out data
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x21);
   for(int k=0; k<256; k++) {
-    // set TFC command to 0xAB
+
+    
     error=0;
-    //cout << "k is " << k << endl;
-    //command[0]=c[k];
-    //command[0]=randomPattern();
+    
     command[0]=k;
     command[1]=command[0];
     command[2]=command[0];
 
-    //    cout << "pattern1 = " << hex << unsigned(command[0]) << endl;
-    // configure DAQ
-    // fastComm_->config_daq(length_read, 0, false);
-    // configure TFC
-    //fastComm_->config_tfc(length, command, period, singleShot);
-
-    //    fastComm_->write_tfc();
-    //usleep(1000);
-    //fastComm_->Take_a_run(length_read, data, length, 0, command, period, singleShot, false );
     // loop over pll_clk_cfg values
     for(int i=0; i<16; i++) {
       //cout << "i = " << i << endl;
@@ -534,7 +524,11 @@ bool Dig_Clk_test::TFC_Command_Check() {
   int parity = 0;
   uint8_t buffer;
   unsigned twelveBits;
+  int counter = 0;
   unmask_all();
+
+  // DSP output
+  salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
   
   // check TFC commands
   string option[8];
@@ -547,61 +541,76 @@ bool Dig_Clk_test::TFC_Command_Check() {
   option[5] = "Snapshot";
   option[6] = "Synch";
   option[7] = "FEReset";
-  
+  //cout << "test 1" << endl;
   
   for(int i=0; i<79; i++)
     command[i]=0x04;
   
-  if(option[0] == "Normal")        command[79] = 0x00;
-  else if(option[0] == "BXReset")  command[79] = 0x01;
-  else if(option[0] == "FEReset")  command[79] = 0x02;
-  else if(option[0] == "Header")   command[79] = 0x04;
-  else if(option[0] == "NZS")      command[79] = 0x08;
-  else if(option[0] == "BxVeto")   command[79] = 0x10;
-  else if(option[0] == "Snapshot") command[79] = 0x20;
-  else if(option[0] == "Synch")    command[79] = 0x40;
-  
-  for(int j=0; j<data_string.length(); j+=3) {
-    twelveBits = fastComm_->read_twelveBits(data_string, j);
-    fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
+  for(int i=0; i < 8; i++) {
+    if(option[i] == "Normal")        command[79] = 0x00;
+    else if(option[i] == "BXReset")  command[79] = 0x01;
+    else if(option[i] == "FEReset")  command[79] = 0x02;
+    else if(option[i] == "Header")   command[79] = 0x04;
+    else if(option[i] == "NZS")      command[79] = 0x08;
+    else if(option[i] == "BxVeto")   command[79] = 0x10;
+    else if(option[i] == "Snapshot") command[79] = 0x20;
+    else if(option[i] == "Synch")    command[79] = 0x40;
     
-    if(flag == 0) {
-      if(option[0] == "Normal") pass[0] = true;
-      if(option[0] == "BXReset" && bxid == 0) pass[0] = true; 
-      
-    }
-    if(flag == 1) {
-      
-      if(length1 == 0x11 && option[0] == "BxVeto") pass[0] = true;
-      if(length1 == 0x12 && option[0] == "Header") pass[0] = true;
-      if(length1 == 0x06 && option[0] == "NZS") pass[0] = true;
-      
-      
-      // if(option[i] == "BXReset") {
-      // 	 salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
-      // 	 if(buffer == 0x00
-      // }
-    }
+    fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );
+
+    //cout << "test 2" << endl;
     
-    if(option[0] == "FEReset") {
-      salt_->read_salt(registers::header_cnt0_reg, &buffer);
-      if(buffer == 0x00) pass[0] = true;
+    for(int j=0; j<data_string.length(); j+=3) {
+      
+      twelveBits = fastComm_->read_twelveBits(data_string, j);
+      fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
+      
+      if(flag == 0) {
+	if(option[i] == "Normal") pass[i] = true;
+	if(option[i] == "BXReset" && bxid == 0) pass[i] = true; 
+	
+      }
+      if(flag == 1) {
+	//cout << "length = " << hex << length1 << endl;
+	//cout << "option[" << dec << i << "] = " << option[i] << endl;
+	if(length1 == 0x11 && option[i] == "BxVeto") pass[i] = true;
+	if(length1 == 0x12 && option[i] == "Header") pass[i] = true;
+	if(length1 == 0x06 && option[i] == "NZS") pass[i] = true;
+	
+	
+	// if(option[i] == "BXReset") {
+	// 	 salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
+	// 	 if(buffer == 0x00
+	// }
+      }
+      //   cout << "test 3" << endl;
+      if(option[i] == "FEReset") {
+	salt_->read_salt(registers::header_cnt0_reg, &buffer);
+	if(buffer == 0x00) pass[i] = true;
+	
+      }
       
     }
+
+    if(!pass[i]) {
+      cout << "ERROR::TFC " << option[i] << " fails" << endl;
+      counter++;
+    }
+
     
   }
-
-  int j=0;
-  //for(int i = 0; i < 8) {
-    
-  //  if(!pass[0]) {
-  //    cout << "ERROR::TFC " << option[0] << "fails" << endl;
-  //    j++;
-  //  }
-  // }
   
-  if(j>0) return false;
+  if(counter>0) return false;
   
   return true;
+  
+}
+
+void Dig_Clk_test::TFC_Reset() {
+
+  // Reset TFC state machine and set all related registers to default values
+  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
+  usleep(1000);
+  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
   
 }

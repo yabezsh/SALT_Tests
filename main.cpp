@@ -97,76 +97,56 @@ cur1->convert_to_amp(&cur_counts,&amp);
 
 printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
 */
-// test digital c
 
+  // initial definitions
+  Fpga *fpga = new Fpga();
+  Salt *st = new Salt(1,5);
+  FastComm *fastComm = new FastComm(fpga);
+  Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
+  Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
+
+  cout << "I2C Check" << endl;;
+  if(dig_com->I2C_check())
+    cout << "I2C OK" << endl;
+  else
+    cout << "I2C FAILED" << endl;
   
- cout << "Defining FPGA" << endl;
- Fpga *fpga = new Fpga();
- cout << "SALT" << endl;
- Salt *st = new Salt(1,5);
- cout << "Defining Fast comm" << endl;
- FastComm *fastComm = new FastComm(fpga);
- cout << "Defining Dig comm" << endl;
- Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
+  cout << "DLL configuration" << endl;
+  if(dig_com->DLL_Check())
+    cout << "DLL configuration OK" << endl;
+  else
+    cout << "DLL configuration FAILED" <<endl;
+  
+  
+  cout << "PLL configuration" << endl;
+  if(dig_com->PLL_Check())
+    cout << "PLL configuration OK" << endl;
+  else
+    cout << "PLL configuration FAILED" <<endl;
+  
+  cout<< "FPGA-DAQ synch" << endl;
+  if(dig_com->DAQ_Sync())
+    cout << "FPGA-DAQ synch OK" << endl;
+  else
+    cout << "FPGA-DAQ synch FAILED" << endl;
+  
 
- Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
+  // reset TFC
+  dig_com->TFC_Reset();
 
- // st->write_salt(0x601,(uint8_t) 0x01);
- //st->write_salt(0x600,(uint8_t) 0x01);
- //st->write_salt(0x604,(uint8_t) 0x01);
- // I2C test
- cout << "I2C test starting" << endl;
- if(dig_com->I2C_check())
-   cout << "I2C check OK" << endl;
- else
-   cout << "I2C check FAILED" << endl;
- /*
-cout << "PLL configuration starting" << endl;
- if(dig_com->PLL_Check())
-   cout << "PLL configuration OK" << endl;
- else
-   cout << "PLL configuration FAILED" <<endl;
- */
- cout << "DLL configuration starting" << endl;
- if(dig_com->DLL_Check())
-   cout << "DLL configuration OK" << endl;
- else
-   cout << "DLL configuration FAILED" <<endl;
- 
- 
-cout << "PLL configuration starting" << endl;
- if(dig_com->PLL_Check())
-   cout << "PLL configuration OK" << endl;
- else
-   cout << "PLL configuration FAILED" <<endl;
- 
- cout<< "Clk synch starting" << endl;
- dig_com->DAQ_Sync();
- 
- //cout << "Clk synch finished" <<endl;
- 
- cout << "TFC check starting" << endl;
- 
- if(dig_com->TFC_check())
-   cout << "TFC OK" << endl;
- else
-   cout << "TFC failed" << endl;
+  // Synch between DSR and TFC
+  if(dig_com->TFC_DAQ_sync())
+    cout << "DSR and TFC synch OK" << endl;
+  else
+    cout << "DSR and TFC synch FAILED" << endl;
 
+  dig_com->TFC_Command_Check();  
 
- 
- 
- cout << "Baseline correction starting" << endl;
- ana_func->Baseline_corr();
- cout << "Baseline correction finished" << endl;
-
-
- //ana_func->Check_NZS();
- 
- ana_func->Check_noise();
- 
-//
- 
-  cout << "Checking Pedestal subtraction" << endl;
+  // Do baseline corr
+  ana_func->Baseline_corr();
+  cout << "Baseline correction OK" << endl;
+  
+    
   if(ana_func->Check_PedS())
     cout << "Ped subtraction OK" << endl;
   else
@@ -178,13 +158,21 @@ cout << "PLL configuration starting" << endl;
     cout << "MCM subtraction OK" << endl;
   else
     cout << "MCM failed" << endl;
+
+
+
+  ana_func->Get_noise(100,"SYNC","Normal");  
+  ana_func->Get_noise(100,"PEDS","Normal");
+  ana_func->Get_noise(100,"MCMS","Normal");
+
+  //ana_func->Gain_check();
   
  //ana_func->Check_noise();
  
  //ana_func->Check_NZS();
  
  //cout << "Calibration run" << endl;
- //ana_func->Check_Gain();
+ ana_func->Check_Gain();
  cout << "done " << endl;
 
  

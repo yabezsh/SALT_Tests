@@ -23,11 +23,13 @@ class Ana_tests {
   void output_file(int runs, float avg_ADC[], float avg_chip[], float avg_noise, float length_avg, string outText, string option);
     void Trim_dac_scan();
     void Check_Gain();
-  void Check_noise();
+    void Get_noise(int runs, string data_type, string option);
   bool Check_NZS();
   void Baseline_corr();
   float calculateSD(float data[], int runs);
   float m_avg_adc[128];
+  float m_noise;
+  float m_noise_rms;
   int m_mcm_ch;
   int m_mcm_v;
   bool Check_PedS();

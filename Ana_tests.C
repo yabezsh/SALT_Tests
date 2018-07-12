@@ -72,7 +72,7 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
   else max=1;
 
   float length_avg = 0;
-  for(int k = 0; k < max; k++) {
+  //for(int k = 0; k < max; k++) {
     
     double v[runs][128] = {0};
     period = length;
@@ -118,10 +118,10 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
     
     for(int i = 0; i < 128; i++) {
       m_avg_adc[i] = avg_ADC[i];
-      if(m_avg_adc[i] !=0 && k>0) cout << "k=" << dec << k << endl;
+      //if(m_avg_adc[i] !=0 && k>0) cout << "k=" << dec << k << endl;
     }
     
-  }
+    //}
   /*
   // output noise parameters to screen if doing a noise run
   if(outText == "noise_sync_ADC") {
@@ -140,6 +140,16 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
     
   }
   */
+
+
+  m_noise = 0;
+  
+  for(int i=0; i<runs; i++) 
+    m_noise+= avg_chip[i]/((float) runs);
+  
+  
+  m_noise_rms = calculateSD(avg_chip, runs);
+  
   output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
   
   return true;
@@ -154,19 +164,19 @@ void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float a
   outfile << "length_avg = " << dec << length_avg << endl;
   
   for(int j = 0; j<runs; j++) avg_noise+=avg_chip[j]/((float) runs);
-
-  if(avg_noise != 0 && option == "Calib") cout << "HERE" << endl;
-   
+      
   outfile << "runs = " << dec << runs << ", Average = " << avg_noise << ", std_dev = " << calculateSD(avg_chip, runs)<<endl;
   
   
   
-    for(int j=0; j<128; j++) {
+  for(int j=0; j<128; j++) {
       outfile << dec << avg_ADC[j] << endl;
-    }
-    
+  }
+  
+  
+  outfile.close();
+  
 
-   outfile.close();
   
   return;  
   
@@ -224,10 +234,10 @@ void Ana_tests::Baseline_corr() {
 }
 
 
-// check noise functionality of chip
-void Ana_tests::Check_noise() {
+// check noise functionality of chip. Specify run number and data output stream type, i.e. masked ch ("MASK"), sync ch ("SYNC"), after ped sub ("PEDS"), after mcm("MCMS"), and either Normal or NZS data packet
+void Ana_tests::Get_noise(int runs, string data_type, string option) {
   
-  string option = "NZS";
+  //option = "NZS";
   string outText;
   uint8_t buffer=0x00;
 
@@ -237,36 +247,42 @@ void Ana_tests::Check_noise() {
 
   // DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
-
   
   // loop over different data streams, i.e. masked ADC, sync ADC, after ped, after mcms
-  for(int i = 0; i < 4; i++) {
 
-    buffer = i << 5;
-    salt_->write_salt(registers::n_zs_cfg, buffer);
-    
-    // read back n_zs_cfg to make proper outfile name
-    salt_->read_salt(registers::n_zs_cfg, &buffer);
-        
-    if((buffer & 0b01100000) == 0) outText = "noise_masked_ADC";
-    else if((buffer & 0b01100000) == 0b00100000) outText = "noise_sync_ADC";
-    else if((buffer & 0b01100000) == 0b01000000) outText = "noise_after_ped";
-    else if((buffer & 0b01100000) == 0b01100000) outText = "noise_after_mcm";
-    else {
-      
-      cout <<"ERROR::n_zs_cfg not properly defined" << endl;
-      return;
-      
-    }
-    
-    // Do Normal packet
-    Get_run("Normal",100,true,outText);
-    
-    // Do NZS packet
-    Get_run("NZS",100,true,outText);
+  if(data_type == "MASK")
+    buffer = 0x00;
+  else if(data_type == "SYNC")
+    buffer = 0x20;
+  else if(data_type == "PEDS")
+    buffer = 0x40;
+  else if(data_type == "MCMS")
+    buffer = 0x60;
+  else {
+    cout << "ERROR:: Data stream not properly defined" << endl;
   }
   
+  salt_->write_salt(registers::n_zs_cfg, buffer);
   
+  // read back n_zs_cfg to make proper outfile name
+  salt_->read_salt(registers::n_zs_cfg, &buffer);
+  
+  if((buffer & 0b01100000) == 0) outText = "noise_masked_ADC";
+  else if((buffer & 0x60) == 0b00100000) outText = "noise_sync_ADC";
+  else if((buffer & 0x60) == 0b01000000) outText = "noise_after_ped";
+  else if((buffer & 0x60) == 0b01100000) outText = "noise_after_mcm";
+  else {
+    
+    cout <<"ERROR::n_zs_cfg not properly defined" << endl;
+    return;
+    
+  }
+  
+  // Do Normal packet
+  Get_run(option,runs,true,outText);
+  
+  cout << "NOISE " << data_type << ": " << m_noise << " +- " << m_noise_rms << endl;
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
 }
 
 // checks mcmch and mcm_v
@@ -444,26 +460,36 @@ void Ana_tests::Check_Gain() {
 
   stringstream outText;
   // calibration pulse run
-  salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x95);
-  salt_->write_salt(registers::calib_enable0_cfg,(uint8_t) 0xFF);
-   salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x00);
-   
-    
-  for(int j = 0; j < 32; j++) {
+  salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x0F);
+  salt_->write_salt(registers::calib_enable0_cfg,(uint8_t) 0x0F);
+  salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x20);
+  
+  //Get_run("Calib",1,true,"test_pulse");
+  
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
+  salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 31);   
+  // return;
+  for(int j = 0; j < 64; j=j+4) {
     
     salt_->write_salt(registers::adc_clk_cfg, (uint8_t) j);
+    if(j<8 || j>40)
+      salt_->write_salt(registers::pack_adc_sync_cfg,(uint8_t) 0x80);
+    else
+      salt_->write_salt(registers::pack_adc_sync_cfg,(uint8_t) 0x00);
+   
+    //cout << "clk = " << dec << j << endl;
     
-    cout << "clk = " << dec << j << endl;
-    
-    for(int i = 0; i < 32; i=i+4) {
+     for(int i = 0; i < 32; i++) {
       
-      outText << "clk_" << j;
-      salt_->write_salt(registers::calib_volt_cfg, (uint8_t) i);
-      cout << "vth_" << dec << i << endl;
-      outText << "_vth_" << i;
-      Get_run("Calib",1,true,outText.str());
-      outText.str("");
-    }
+    //   outText << "clk_" << j;
+    //   salt_->write_salt(registers::calib_volt_cfg, (uint8_t) i);
+    cout << "vth_" << dec << i << endl;
+    //   outText << "_vth_" << i;
+       Get_run("Calib",1,true,"test");
+       cout << "avgs hits[" << dec << j <<"]["<<dec<<i<<"] = " << m_noise << endl;
+    //   outText.str("");
+     }
  
   }
+   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
 }

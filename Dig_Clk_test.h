@@ -23,7 +23,7 @@ class Dig_Clk_test {
   //Salt *st = new Salt();
 
   void unmask_all();
-  void DAQ_Sync();
+  bool DAQ_Sync();
   int Check_Ber(uint8_t *packet, int length);
   int Check_Ber(uint32_t *packet, int length, uint8_t pattern);
   void FPGA_PLL_shift(int16_t phase);
@@ -34,6 +34,7 @@ class Dig_Clk_test {
   bool TFC_Command_Check();
   bool TFC_DAQ_sync();
   bool DAQ_Delay();
+  void TFC_Reset();
   uint8_t randomPattern();
   
  private:
