@@ -105,26 +105,22 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
   Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
 
-  cout << "I2C Check" << endl;;
   if(dig_com->I2C_check())
     cout << "I2C OK" << endl;
   else
     cout << "I2C FAILED" << endl;
   
-  cout << "DLL configuration" << endl;
   if(dig_com->DLL_Check())
     cout << "DLL configuration OK" << endl;
   else
     cout << "DLL configuration FAILED" <<endl;
   
   
-  cout << "PLL configuration" << endl;
   if(dig_com->PLL_Check())
     cout << "PLL configuration OK" << endl;
   else
     cout << "PLL configuration FAILED" <<endl;
   
-  cout<< "FPGA-DAQ synch" << endl;
   if(dig_com->DAQ_Sync())
     cout << "FPGA-DAQ synch OK" << endl;
   else
@@ -150,14 +146,14 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   if(ana_func->Check_PedS())
     cout << "Ped subtraction OK" << endl;
   else
-    cout << "Ped subtraction failed" << endl;
+    cout << "Ped subtraction FAILED" << endl;
 
 
   
   if(ana_func->Check_MCMS())
     cout << "MCM subtraction OK" << endl;
   else
-    cout << "MCM failed" << endl;
+    cout << "MCM sbtraction FAILED" << endl;
 
 
 
@@ -165,14 +161,12 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   ana_func->Get_noise(100,"PEDS","Normal");
   ana_func->Get_noise(100,"MCMS","Normal");
 
-  //ana_func->Gain_check();
-  
- //ana_func->Check_noise();
- 
- //ana_func->Check_NZS();
- 
- //cout << "Calibration run" << endl;
- ana_func->Check_Gain();
+  ana_func->Get_noise(100,"SYNC","NZS");  
+  ana_func->Get_noise(100,"PEDS","NZS");
+  ana_func->Get_noise(100,"MCMS","NZS");
+
+
+  // ana_func->Check_Gain();
  cout << "done " << endl;
 
  

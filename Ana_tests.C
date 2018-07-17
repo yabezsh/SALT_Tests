@@ -15,7 +15,7 @@ Ana_tests::Ana_tests(Fpga *fpga, Salt *salt, FastComm *fastComm) {
   
 }
 
-bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
+void Ana_tests::Get_run(string option, int runs, string outText) {
   
   // Define command length (will be 2 in this case)
   uint8_t length = 90;  // Define command list (BXID and Sync)
@@ -34,8 +34,6 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
   int ADC[128] = {0};
   int bxid = 0;
   int parity = 0;
-  int mcm_v = 0;
-  int mcm_ch = 0;
   int mem_space = 0;
   int flag = 0;
   //int runs = 1;
@@ -44,9 +42,8 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
   //int largest=0;
   length_read = 255;
   float avg_chip[runs] = {0};
-  float std_dev = 0;
-  uint8_t mcm1, mcm2;
-  
+  float length_avg = 0;
+  period = length;
   
   // Define a number of headers for init.
   for(int i=0; i<79; i++)
@@ -62,22 +59,11 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
   else if(option == "Synch")    command[79] = 0x40;
   else if(option == "Calib")    command[79] = 0x80;
   else {
-    cout << "ERROR: Output packet not properly defined." << endl;
-    return false;
+    cout << "ERROR: Output packet not properly defined." << endl;  
+    return;  
+  } 
     
-  }
-  
-  int max;
-  if(option == "Calib") max=256;
-  else max=1;
-
-  float length_avg = 0;
-  //for(int k = 0; k < max; k++) {
-    
-    double v[runs][128] = {0};
-    period = length;
-    
-    // Take a number of runs
+  // Take a number of runs
     for(int i = 0; i < runs; i++) {
       fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );
 
@@ -121,27 +107,7 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
       //if(m_avg_adc[i] !=0 && k>0) cout << "k=" << dec << k << endl;
     }
     
-    //}
-  /*
-  // output noise parameters to screen if doing a noise run
-  if(outText == "noise_sync_ADC") {
-
-    cout << "Raw: noise = " << 
-    
-  }
-  if(outText == "noise_after_ped") {
-
-    
-    
-  }
-  if(outText == "noise_after_mcm") {
-
-    
-    
-  }
-  */
-
-
+ 
   m_noise = 0;
   
   for(int i=0; i<runs; i++) 
@@ -152,7 +118,7 @@ bool Ana_tests::Get_run(string option, int runs, bool output, string outText) {
   
   output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
   
-  return true;
+  
   
 }
 
@@ -185,30 +151,35 @@ void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float a
 // baseline corrections through trim dac
 void Ana_tests::Baseline_corr() {
 
+  // Set SALT to DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
 
 
-  
+  // output files to save data
   ofstream outfile, trimdac_scan;
   outfile.open("Baseline_value.txt");
   trimdac_scan.open("Trim_DAC_scan.txt");
+
+  // variables
   float adc_base[128][256] = {0};
   int baseline[128] = {0};
+  float avg_baseline = 0;
   
   // set commom baseline to all channels
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X84);
 
-  // loop over baseline values
+  //get a number of runs for each baseline value
   for(int i = 0; i < 256 ; i++) {
 
+    // baseline value written to salt
     salt_->write_salt(registers::baseline_g_cfg,(uint8_t) i);
-
-    // get adc of 1 run
-    Get_run("NZS",10,true,"no_output");
+    
+    Get_run("NZS",10,"no_output");
     for(int j = 0; j < 128; j++) adc_base[j][i] = m_avg_adc[j];
     
   }
 
+  // loop over all baseline values and channels and find best value (lowest abs(ADC))
   for(int j = 0; j < 128; j++) {
     for(int i=0; i<256; i++) {
       trimdac_scan << adc_base[j][i] << "\t";
@@ -216,21 +187,33 @@ void Ana_tests::Baseline_corr() {
 	baseline[j]=i;
 	
       }
-    
+      
     }
-      trimdac_scan << endl;
-    //cout << "baseline[" << dec << j << "] = " << dec << baseline[j] << endl;
-    outfile << dec << baseline[j] << endl;
-    salt_->write_salt((registers::baseline0_cfg) + j,(uint8_t) baseline[j]);
-  }
-  
 
-  // revert to individual baseline value for each channel
+    // save scan data to output file
+    trimdac_scan << endl;
+
+    // calculate avg best value
+    avg_baseline += baseline[j]/128.;
+
+    // write best value to salt register
+    salt_->write_salt((registers::baseline0_cfg) + j,(uint8_t) baseline[j]);
+    
+  }
+
+  // write best trim dac setting to file
+  outfile << "AVG = " << avg_baseline << endl;
+  outfile << "STD_DEV = " << calculateSD(baseline,128) << endl;
+  for(int i = 0; i < 128; i++)
+    outfile << dec << baseline[i] << endl;
+  
+  // close output files
   outfile.close();
   trimdac_scan.close();
+  
+  // revert to individual baseline value for each channel
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X04);
-  
-  
+
 }
 
 
@@ -279,7 +262,7 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
   }
   
   // Do Normal packet
-  Get_run(option,runs,true,outText);
+  Get_run(option,runs,outText);
   
   cout << "NOISE " << data_type << ": " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
@@ -341,7 +324,7 @@ bool Ana_tests::Check_MCMS() {
       
       salt_->write_salt(registers::mcm_th2_cfg, (uint8_t) j);
       
-      Get_run("NZS",1,true,"mcm_test");
+      Get_run("NZS",1,"mcm_test");
       
       if(!Check_MCMS(m_avg_adc, mcm1, mcm2, m_mcm_ch, m_mcm_v)) 
 	return false;
@@ -361,9 +344,7 @@ bool Ana_tests::Check_PedS() {
   ofstream outfile;
   outfile.open("Ped_sub_failed_ch.txt");
   int ped;
-  int bad_ch[128] = {0};
   bool flag = true;
-  //float  = 0;
   
   // Set output to ped subtraction data stream
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x40);
@@ -375,7 +356,7 @@ bool Ana_tests::Check_PedS() {
 
     salt_->write_salt(registers::ped_g_cfg, (uint8_t) ped);
 
-    Get_run("NZS",10,true,"ped_test");
+    Get_run("NZS",10,"ped_test");
    
     ped = i;
     if(i >= 32) 
@@ -386,7 +367,6 @@ bool Ana_tests::Check_PedS() {
       if(abs(m_avg_adc[k] - ped) > 1) {
 	cout << "ERROR::Ch" << dec << k << " failed Pedestal subtraction" << endl;
 	outfile << "ch = " << dec << k << endl;
-	//bad_ch[k]=1;
 	flag = false;
       }
     }
@@ -395,7 +375,7 @@ bool Ana_tests::Check_PedS() {
   
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x20);
   salt_->write_salt(registers::ped_g_cfg, (uint8_t) 0x00);
-  outfile.close();
+  
   return flag;
   
 }
@@ -413,7 +393,7 @@ bool Ana_tests::Check_NZS() {
     salt_->write_salt(registers::n_zs_cfg, n_zs);
     
     // Take a run
-    Get_run("Normal",1,true,"no_out");
+    Get_run("Normal",1,"no_out");
 
     // Check that no channel has hits above the threshold
     for(int k = 0; k < 128; k++) {      
@@ -427,7 +407,7 @@ bool Ana_tests::Check_NZS() {
     
     // take 100 runs and save result
     outText << "nzs_th_" << dec << i;
-    Get_run("Normal",100,true,outText.str());
+    Get_run("Normal",100,outText.str());
     outText.str("");
   }
 
@@ -440,15 +420,26 @@ bool Ana_tests::Check_NZS() {
 float Ana_tests::calculateSD(float data[], int runs) {
 
   float sum = 0.0, mean, standardDeviation = 0.0;
-  
   int i;
+  for(i = 0; i < runs; ++i)
+    sum += data[i];
+  
+  mean = sum/((float) runs);
   
   for(i = 0; i < runs; ++i)
-    {
-      sum += data[i];
-    }
+    standardDeviation += pow(data[i] - mean, 2);
   
-  mean = sum/10;
+  return sqrt(standardDeviation / ((float) runs));
+}
+
+float Ana_tests::calculateSD(int data[], int runs) {
+
+  float sum = 0.0, mean, standardDeviation = 0.0;
+  int i;
+  for(i = 0; i < runs; ++i)
+    sum += data[i];
+  
+  mean = sum/((float) runs);
   
   for(i = 0; i < runs; ++i)
     standardDeviation += pow(data[i] - mean, 2);
@@ -477,17 +468,13 @@ void Ana_tests::Check_Gain() {
     else
       salt_->write_salt(registers::pack_adc_sync_cfg,(uint8_t) 0x00);
    
-    //cout << "clk = " << dec << j << endl;
+  
     
      for(int i = 0; i < 32; i++) {
       
-    //   outText << "clk_" << j;
-    //   salt_->write_salt(registers::calib_volt_cfg, (uint8_t) i);
-    cout << "vth_" << dec << i << endl;
-    //   outText << "_vth_" << i;
-       Get_run("Calib",1,true,"test");
-       cout << "avgs hits[" << dec << j <<"]["<<dec<<i<<"] = " << m_noise << endl;
-    //   outText.str("");
+   
+       Get_run("Calib",1,"test");
+   
      }
  
   }

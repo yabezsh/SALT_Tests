@@ -51,8 +51,7 @@ bool Dig_Clk_test::DAQ_Sync() {
 	e[i][j]+=Check_Ber(data,length,0xAB);   
 
 	if(k==9)
-	  // cout << "eij = " << dec << unsigned(e[i][j]) << endl;
-	
+	  
 	if(k==9 && (e[i][j]==0)) {
 	  
 	  bs_p[0] = i;
@@ -361,30 +360,23 @@ bool Dig_Clk_test::TFC_DAQ_sync() {
 
     // loop over pll_clk_cfg values
     for(int i=0; i<16; i++) {
-      //cout << "i = " << i << endl;
+      
       salt_->write_salt(registers::pll_clk_cfg, (uint8_t) (16*i));
       
       // loop over data_clk_sel+deser_byte_start
       for(int j=0; j<32; j++) {
-
 	
-	//cout << "j = " << j << endl;
 	if(e[i][j]!=0) continue;
 	salt_->write_salt(registers::deser_cfg, (uint8_t) j);
-	//usleep(100);
+
 	fastComm_->Take_a_run(length_read, data, length, 0, command, period, singleShot, false );
-	//	fastComm_->read_daq(length_read,data,false);
+
 	e[i][j]+=Check_Ber(data,length_read,command[0]);
-	//if(k==255)
-	//	cout << "k = " << k << endl;
-	//cout << "command = " << command[0] << endl;
-	//cout << "e[" << dec << i << "][" << dec << j << "] = " << e[i][j] << endl;
-  
+	  
 	if(k==255 && e[i][j]==0) {
 	  cout << "pll_clk_cfg = " << hex << (unsigned) 16*i << endl;
 	  cout << "deser_cfg = " << hex << (unsigned) j << endl;
 	  rightConfig=true;
-	  //break;
 	  ibest=i;
 	  jbest=j;
 	  break;
@@ -417,8 +409,6 @@ bool Dig_Clk_test::DAQ_Delay() {
   bool singleShot = true;
   bool rightConfig = false;
   
-  cout << "About to set DAQ delay" << endl;
-  
   command[0]=0x00;
   command[1]=0xAB;
   command[2]=0x00;
@@ -441,11 +431,7 @@ bool Dig_Clk_test::DAQ_Delay() {
   fastComm_->read_daq(length_read,data,true);
   
   
-  for(int j=0; j<length_read; j++) 
-    cout << "data1["<< dec << j << "]=" << hex << (unsigned) data[j] << endl;
   
-  //}
-  //  }
   salt_->read_salt(registers::pll_clk_cfg, &data8);
   cout << "pll_clk_cfg = " << hex<< (unsigned) data8 << endl;
   salt_->read_salt(registers::deser_cfg, &data8);
@@ -478,12 +464,9 @@ uint8_t Dig_Clk_test::randomPattern() {
   srand(time(NULL)); // seed random number generator
 
   x = rand() & 0xFF;
-    //cout << "x = " << x << endl;
-    x |= (rand() & 0xFF) << 8;
-    //cout << "x = " << x << endl;
-    x |= (rand() & 0xFF) << 16;
-    //cout << "x = " << x << endl;
-    x |= (rand() & 0xFF) << 24;
+  x |= (rand() & 0xFF) << 8;
+  x |= (rand() & 0xFF) << 16;
+  x |= (rand() & 0xFF) << 24;
 
     return x;
   
@@ -541,7 +524,6 @@ bool Dig_Clk_test::TFC_Command_Check() {
   option[5] = "Snapshot";
   option[6] = "Synch";
   option[7] = "FEReset";
-  //cout << "test 1" << endl;
   
   for(int i=0; i<79; i++)
     command[i]=0x04;
@@ -558,8 +540,6 @@ bool Dig_Clk_test::TFC_Command_Check() {
     
     fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );
 
-    //cout << "test 2" << endl;
-    
     for(int j=0; j<data_string.length(); j+=3) {
       
       twelveBits = fastComm_->read_twelveBits(data_string, j);
@@ -571,19 +551,11 @@ bool Dig_Clk_test::TFC_Command_Check() {
 	
       }
       if(flag == 1) {
-	//cout << "length = " << hex << length1 << endl;
-	//cout << "option[" << dec << i << "] = " << option[i] << endl;
 	if(length1 == 0x11 && option[i] == "BxVeto") pass[i] = true;
 	if(length1 == 0x12 && option[i] == "Header") pass[i] = true;
 	if(length1 == 0x06 && option[i] == "NZS") pass[i] = true;
 	
-	
-	// if(option[i] == "BXReset") {
-	// 	 salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
-	// 	 if(buffer == 0x00
-	// }
       }
-      //   cout << "test 3" << endl;
       if(option[i] == "FEReset") {
 	salt_->read_salt(registers::header_cnt0_reg, &buffer);
 	if(buffer == 0x00) pass[i] = true;
@@ -596,7 +568,6 @@ bool Dig_Clk_test::TFC_Command_Check() {
       cout << "ERROR::TFC " << option[i] << " fails" << endl;
       counter++;
     }
-
     
   }
   
