@@ -138,7 +138,7 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
     cout << "DSR and TFC synch FAILED" << endl;
 
   dig_com->TFC_Command_Check();  
-  /*
+  
   // Do baseline corr
   ana_func->Baseline_corr();
   cout << "Baseline correction OK" << endl;
@@ -167,7 +167,7 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   ana_func->Get_noise(100,"MCMS","NZS");
 
 
-  // ana_func->Check_Gain();
+   ana_func->Check_Gain();
  cout << "done " << endl;
 
  

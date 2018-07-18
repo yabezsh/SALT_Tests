@@ -36,7 +36,9 @@ class Ana_tests {
   bool Check_PedS();
   bool Check_MCMS();
   bool Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v);
-
+  bool Check_linear(float x[], float y[], int size, float thresh);
+  bool Get_Quad_Coef(float x[], float y[], int PointsNum, float &a, float &b, float &c);
+  void Get_quadTerms(float x[], float y[], int npoints, float &a, float &b, float &c);
 
   private:
   Fpga* fpga_;

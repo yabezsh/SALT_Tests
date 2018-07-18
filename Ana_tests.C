@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cmath>
 #include <cstring>
+//#include "LstSquQuadRegr.h"
 //#include <gsl/gsl_sf_bessel.h>
 
 
@@ -434,6 +435,17 @@ float Ana_tests::calculateSD(int data[], int runs) {
  
 void Ana_tests::Check_Gain() {
 
+
+
+  float x[10], y[10];
+
+  for(int i=0; i<10; i++) {
+    x[i]=i;
+    y[i] = 2*i+1;
+  }
+
+  Check_linear(x,y,10,0.1);
+  /*
   stringstream outText;
   // calibration pulse run
   salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x0F);
@@ -464,4 +476,134 @@ void Ana_tests::Check_Gain() {
  
   }
    salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
+  */
+}
+
+bool Ana_tests::Get_Quad_Coef(float x[], float y[], int PointsNum, float &a, float &b, float &c) {
+
+
+	const double S00=PointsNum;//points number
+	double S40=0, S10=0, S20=0, S30=0, S01=0, S11=0, S21 = 0;
+	double value = 0, indexPow2 = 0;
+	const double MINvalue = y[0];
+	const double MINtime = x[0];
+	int index = -1;
+	for (int i=0; i<PointsNum; i++ ){
+		index = x[i] - MINtime;
+		value = (y[i] - MINvalue); //normalizing
+//		cout << "i=" << i << " index=" << index << " value=" << value << endl;
+		S40+= pow(index,4);
+		S30+= pow(index,3);
+		indexPow2 = pow(index,2);
+		S20+= indexPow2;
+		S10+= index;
+
+		S01 += value;
+		S11 += value*index;
+		S21 += value*indexPow2;
+	}
+
+
+	double S20squared = pow(S20,2);
+	//minors M_ij=M_ji
+	double M11 = S20*S00;
+	M11 -= pow(S10,2);
+
+	double M21 = S30*S00;
+	M21 -= S20*S10;
+	double M22 = S40*S00;
+	M22 -= S20squared;
+	double M31 = S30*S10;
+	M31 -= S20squared;
+
+	double M32 = S40*S10;
+	M32 -= S20*S30;
+//	double M33 = S40*S20 - pow(S30,2);
+
+	double discriminant = S40*M11;
+	discriminant -= S30*M21;
+	discriminant += S20*M31;
+//	cout << "discriminant=" << discriminant << endl;
+	if (abs(discriminant) < .00000000001) return  false;
+
+	double Da = S21*M11;
+	Da -= S11*M21;
+	Da += S01*M31;
+	a = Da/discriminant;
+//	cout << "discriminant=" << discriminant;
+//	cout << " Da=" << Da;
+
+	double Db = -S21*M21;
+	Db += S11*M22;
+	Db -= S01*M32;
+	b = Db/discriminant;
+//	cout << " Db=" << Db << endl;
+
+
+	
+	//critPoint = -Db/(2*Da) + MINtime; //-b/(2*a)= -Db/discriminant / (2*(Da/discriminant)) = -Db/(2*Da);
+
+		return true;
+
+}
+
+bool Ana_tests::Check_linear(float x[], float y[], int size, float thresh) {
+
+  float a, b, c;
+
+  Get_quadTerms(x,y,size,a,b,c);
+  
+  
+  //  if(!Get_Quad_Coef(x,y,size,a,b,c))
+  //return false;
+
+  float ratio = abs(c/b);
+
+  cout << "a = " << a << endl;
+  cout << "b = " << b << endl;
+  cout << "c = " << c << endl;
+  
+  if(ratio > thresh) {
+    cout << "NOT LINEAR" << endl; 
+    return false;
+  }
+}
+
+void Ana_tests::Get_quadTerms(float x[], float y[], int npoints, float &a, float &b, float &c) {
+
+  float S01 = 0, S02 = 0, S03 = 0, S04 = 0, S10 = 0, S11 = 0, S12 = 0;
+  float a2, b2, c2, a3, b3, c3, a4, b4, c4;
+  float m, n;
+  for(int i=0; i < npoints; i++) {
+
+    S01 += x[i];
+    S02 += (x[i]*x[i]);
+    S03 += (x[i]*x[i]*x[i]);
+    S04 += (x[i]*x[i]*x[i]*x[i]);
+    S10 += y[i];
+    S11 += (y[i]*x[i]);
+    S12 += (y[i]*x[i]*x[i]);
+  }
+
+  a2 = S01/((float) npoints);
+  a3 = S02/((float) npoints);
+  a4 = S10/((float) npoints);
+
+  b2 = S02/S01;
+  b3 = S03/S01;
+  b4 = S11/S01;
+
+  c2 = S03/S02;
+  c3 = S04/S02;
+  c4 = S12/S02;
+
+  
+  m = (a4-c4) + (b4-a4)/(b2-a2)*(c2-a2);
+  n = (c3-a3) + (b3-a3)/(b2-a2)*(c2-a2);
+
+  c = -m/n;
+
+  b = 1/(b2-a2)*( (b4-a4) +(b3-a3)*c);
+
+  a = a4-a2*b-a3*c;
 }
