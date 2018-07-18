@@ -30,7 +30,6 @@ class Dig_Clk_test {
   bool DLL_Check();
   bool PLL_Check();
   bool I2C_check();
-  bool TFC_check();
   bool TFC_Command_Check();
   bool TFC_DAQ_sync();
   bool DAQ_Delay();

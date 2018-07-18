@@ -105,10 +105,11 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
   Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
 
+  cout << "I2C check" << endl;
   if(dig_com->I2C_check())
-    cout << "I2C OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "I2C FAILED" << endl;
+    cout << "FAIL" << endl << "FAIL" << endl;
   
   if(dig_com->DLL_Check())
     cout << "DLL configuration OK" << endl;
@@ -137,7 +138,7 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
     cout << "DSR and TFC synch FAILED" << endl;
 
   dig_com->TFC_Command_Check();  
-
+  /*
   // Do baseline corr
   ana_func->Baseline_corr();
   cout << "Baseline correction OK" << endl;

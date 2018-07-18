@@ -16,27 +16,27 @@ Dig_Clk_test::Dig_Clk_test(Fpga *fpga, Salt *salt, FastComm *fastComm) {
    fpga_=fpga;
   salt_=salt;
   fastComm_=fastComm;
- 
+  
 }
 
 // Synch output of DAQ to clock
 bool Dig_Clk_test::DAQ_Sync() {
-  bool all_elink = false;
+
   uint32_t data[5120];
-  //else {uint8_t data[5120];};
   const int length=100;
-  uint8_t length_read = 100;
   int e[8][8] = {0};
   int bs_p[2];
   bool found_opt = false;
   bool tfc_trig = false; // Do not set tfc trigger for pattern readout
-
+  
   // DAQ Reset & Clear FIFO
   fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x11);
   usleep(100);
   fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x00);
 
+  // configure DAQ  
   fastComm_->config_daq(length, 0, tfc_trig);
+  
   // Set correct pattern
   salt_->write_salt(registers::pattern_cfg, (uint8_t) 0xAB); // Set pattern for synch, in this case hAB
   salt_->write_salt(registers::ser_source_cfg, (uint8_t) 0x22); // Reset ser_source_cfg (count up, pattern register output)
@@ -74,11 +74,9 @@ bool Dig_Clk_test::DAQ_Sync() {
     usleep(100);
     fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x00);
     usleep(100);
-    // fpga_->write_fpga(registers::DAQ_CFG, (uint8_t) 0x10);
     FPGA_PLL_shift(-8);
     
   }
-  
    
   if(!found_opt) cout << "CLK synch failed: Could not find optimal bit slip/phase" << endl;
   else cout << "CLK synch finished. Optimal values = " <<bs_p[0]  << ", " << bs_p[1] << endl; 
@@ -98,21 +96,7 @@ void Dig_Clk_test::FPGA_PLL_shift(int16_t phase) {
   fpga_->write_fpga(0x00040008,(uint8_t) 0x01);
 
 }
-/*
-int Dig_Clk_test::Check_Ber(uint8_t *packet, int length) {
 
-  int error =0;
- 
-   for (int k=0; k<length-5; k+=5) {
-
-    if(packet[k]!=packet[k+5]+1) error++;
-
-  }
-   
-  return error;
-
-}
-*/
 // check bit error
 int Dig_Clk_test::Check_Ber(uint32_t *packet, int length, uint8_t pattern) {
 
@@ -128,27 +112,13 @@ int Dig_Clk_test::Check_Ber(uint32_t *packet, int length, uint8_t pattern) {
     e3=(packet[k] & 0x00FF0000) >> 16;
     
     
-    //  if(k==length-1) {
-    // cout << "packet[]=" << hex << unsigned(packet[k]) << endl;
-    
-    // cout << "error = " << error << endl;
-    // }
-    
     if((e1!=pattern) || (e2!=pattern) || (e3!=pattern)) {
-      // if(pattern != 0) cout << "pattern = " << hex << (unsigned) pattern << endl;
-      //cout << "e1=" << hex << (unsigned) packet[k] << endl;
+
       error++;
-      //else
+
     }
-        if(error!=0 && error<10) {
     
-	  //    cout << "packet[]=" << hex << unsigned(packet[k]) << endl; 
-    
-    // if(k==length-1) {
-    
-    //   cout << "error after= " << error << endl;
-        }
-    
+        
   } 
   
   return error;
@@ -161,25 +131,23 @@ bool Dig_Clk_test::DLL_Check() {
   uint8_t data=0xFF;
   uint8_t command=0xFF;
   uint8_t read=0;
-
-
-  cout << "Setting dll_cp_cfg to default value: 0x9A" << endl;
+  
   salt_->read_salt(registers::dll_vcdl_cfg, &read);
   if(read != 0x60) 
     salt_->write_salt(registers::dll_vcdl_cfg,(uint8_t) 0x60);
   usleep(1);
-
+  
   salt_->read_salt(registers::dll_vcdl_mon, &read);
-
+  
   while((read & 0x80) != 0x00) {
-
+    
     salt_->read_salt(registers::dll_vcdl_cfg, &read);
     read++;
     salt_->write_salt(registers::dll_vcdl_cfg,read);
     //salt_->read_salt(registers::dll_vcdl_cfg, &read);
     salt_->read_salt(registers::dll_vcdl_mon, &read);
   }
-
+  
   salt_->read_salt(registers::dll_vcdl_cfg, &read);
   read=read-1;
   salt_->write_salt(registers::dll_vcdl_cfg,read);
@@ -197,12 +165,13 @@ bool Dig_Clk_test::DLL_Check() {
     
     salt_->read_salt(registers::dll_vcdl_mon, &read);
   }
-
+  
   
   return true;
   
 }
 
+// PLL configuration as outlined in SALT manual
 bool Dig_Clk_test::PLL_Check() {
 
   uint8_t data = 0x00;
@@ -225,125 +194,54 @@ bool Dig_Clk_test::PLL_Check() {
 bool Dig_Clk_test::I2C_check() {
 
   uint8_t data = 0;
-  uint8_t command = 0xFF;
 
   // Configure PLL
-  //cout << "I2C_check: Configuring PLL" << endl;
-  // command = 0x0D;
-  // salt_->write_salt(registers::pll_main_cfg, command);
-  //cout << "I2C_check: PLL configured" << endl;
- salt_->write_salt(registers::pll_main_cfg, (uint8_t) 0x8C );
-   usleep(1000);
-   salt_->write_salt(registers::pll_vco_cfg, (uint8_t) 0x12 );
-   usleep(1000);
+  salt_->write_salt(registers::pll_main_cfg, (uint8_t) 0x8C );
+  usleep(10);
+  salt_->write_salt(registers::pll_vco_cfg, (uint8_t) 0x12 );
+  usleep(10);
   salt_->write_salt(registers::pll_main_cfg, (uint8_t) 0xCC );
-   usleep(1000);
+  usleep(10);
   salt_->write_salt(registers::ser_source_cfg, (uint8_t) 0x22 );
-  usleep(1000);
-   salt_->write_salt(registers::pattern_cfg, (uint8_t) 0xF0 );
+  usleep(10);
+  salt_->write_salt(registers::pattern_cfg, (uint8_t) 0xF0 );
+
   // Check that I2C can Read/Write random patters
   uint8_t x;
   srand(time(NULL)); // seed random number generator
-
+  
   clock_t begin = clock();
-   for(int i=0; i<10000; i++) {
-
-     x=randomPattern();
-
-   
-    //cout << "Writing to pattern register: "  << hex << unsigned(x) << endl;
+  for(int i=0; i<10000; i++) {
     
+    x=randomPattern();
     salt_->write_salt(registers::pattern_cfg, x);
-
-    //cout << "Wrote to pattern register" << endl;
     salt_->read_salt(registers::pattern_cfg, &data);
-    //cout << "Reading from pattern register: " << hex<<unsigned(data) << endl;
     if(data!=x) return false;
 
   }
-
-   clock_t end = clock();
-   double elapsed_sec = double(end - begin) / CLOCKS_PER_SEC;
-   cout << "I2C time: " << elapsed_sec << " seconds" << endl;
+  
+  clock_t end = clock();
+  double elapsed_sec = double(end - begin) / CLOCKS_PER_SEC;
   return true;
 
 }
 
-bool Dig_Clk_test::TFC_check() {
-
-  // Define command length (will be 2 in this case)
-  uint8_t length = 6;
-  // Define command list (BXID and Sync)
-  uint8_t command[max_commands]={0};
-  // Read out data packet
-  uint16_t length_read = 115; // number of clock cycles to read
-  uint32_t data[5120]; // data packet
-  uint8_t delay = 0; // clock delay
-  int trigger = 1; // trigger aquisition
-  int period = length;
-  uint8_t data8 = 0;
-  
-  // Reset TFC state machine and set all related registers to default values
-  cout << "Reset state machine and set all registers to default values" << endl;
-  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
-  usleep(100);
-  fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
-  cout << "Reset complete" << endl;
-
-  cout << "about to do TFC Chip sync" << endl;
-  // check TFC-DAQ clk sync
-  if(!TFC_DAQ_sync()) cout << "TFC Chip sync bad" << endl;//return false;
-  
-   else cout << "TFC Chip sync OK" << endl;
-
-  //unmask_all();
-
-      
-   return false;
-   
-   
-   cout << "TFC checks finished" << endl;
-   return true;
-   
-}
 
 // sync between TFC and chip
 bool Dig_Clk_test::TFC_DAQ_sync() {
  
-
- // Define command length (will be 2 in this case)
   uint8_t length = 3;
-  // Define command list (BXID and Sync)
   uint8_t command[max_commands]={0};
-  // Read out data packet
   uint8_t length_read = 100; // number of clock cycles to read
   uint32_t data[5120]; // data packet
-  uint8_t delay = 0; // clock delay
-  int trigger = 1; // trigger aquisition
   int period = 3;
-  uint8_t data8 = 0;
-   // define single continuous transmission
+   // define single or continuous transmission
   bool singleShot = false;
   bool rightConfig = false;
-  int error=0;
+
   int e[256][32] = {0};
   int ibest=0;
   int jbest=0;
-  // uint8_t c[7];
-  /*
-  c[0]=0x01;
-  c[1]=0x02;
-  c[2]=0x03;
-  c[4]=0x10;
-  c[5]=0x20;
-  c[6]=0xAB;
-  */
-  // Reset TFC state machine and set all related registers to default values
-  // cout << "Reset state machine and set all registers to default values" << endl;
-  // fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x01);
-  // usleep(1000);
-  // fpga_->write_fpga(registers::TFC_CFG,(uint8_t) 0x00);
-  // cout << "Reset complete" << endl;
 
   // Set DAQ delay to 0
   fpga_->write_fpga(registers::DAQ_DELAY, (uint8_t) 0x00);
@@ -351,9 +249,7 @@ bool Dig_Clk_test::TFC_DAQ_sync() {
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x21);
   for(int k=0; k<256; k++) {
 
-    
-    error=0;
-    
+      
     command[0]=k;
     command[1]=command[0];
     command[2]=command[0];
@@ -506,12 +402,17 @@ bool Dig_Clk_test::TFC_Command_Check() {
   int bxid = 0;
   int parity = 0;
   uint8_t buffer;
+  uint8_t buffer2;
   unsigned twelveBits;
   int counter = 0;
   unmask_all();
 
   // DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
+
+  // set synch pattern registers
+  salt_->write_salt(registers::sync1_cfg,(uint8_t) 0x8C);
+  salt_->write_salt(registers::sync0_cfg,(uint8_t) 0xAB);
   
   // check TFC commands
   string option[8];
@@ -521,8 +422,8 @@ bool Dig_Clk_test::TFC_Command_Check() {
   option[2] = "Header";
   option[3] = "NZS";
   option[4] = "BxVeto";
-  option[5] = "Snapshot";
-  option[6] = "Synch";
+  option[5] = "Normal";
+  option[6] = "Snapshot";
   option[7] = "FEReset";
   
   for(int i=0; i<79; i++)
@@ -543,7 +444,9 @@ bool Dig_Clk_test::TFC_Command_Check() {
     for(int j=0; j<data_string.length(); j+=3) {
       
       twelveBits = fastComm_->read_twelveBits(data_string, j);
+      if(twelveBits == 0x0F0) continue;
       fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
+      
       
       if(flag == 0) {
 	if(option[i] == "Normal") pass[i] = true;
@@ -560,6 +463,31 @@ bool Dig_Clk_test::TFC_Command_Check() {
 	salt_->read_salt(registers::header_cnt0_reg, &buffer);
 	if(buffer == 0x00) pass[i] = true;
 	
+      }
+      if(option[i] == "Synch") {
+       
+	//salt_->read_salt(registers::sync1_cfg, &buffer);
+	salt_->read_salt(registers::sync0_cfg, &buffer);
+	
+	twelveBits = fastComm_->read_twelveBits(data_string, j+3);
+	
+
+	if((buffer & 0xFF) == (twelveBits & 0xFF))
+	  pass[i] = true;
+	
+      }
+      if(option[i] == "Snapshot") {
+
+	salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
+	//salt_->read_salt(registers::bxid_cnt0_sn
+	//cout << hex << (unsigned) twelveBits << endl;
+	//cout << "snap is : " << hex << (unsigned) buffer << endl;
+
+	//	cout << "BUFFER " << hex << (unsigned) buffer << endl;
+	//cout << "bxid " << hex << (unsigned) bxid << endl;
+	
+	if(buffer == 79)
+	  pass[i] = true;
       }
       
     }

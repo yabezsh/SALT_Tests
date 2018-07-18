@@ -36,10 +36,8 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
   int parity = 0;
   int mem_space = 0;
   int flag = 0;
-  //int runs = 1;
   int length1= 0;
   unsigned twelveBits;
-  //int largest=0;
   length_read = 255;
   float avg_chip[runs] = {0};
   float length_avg = 0;
@@ -48,7 +46,6 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
   // Define a number of headers for init.
   for(int i=0; i<79; i++)
     command[i]=0x04;
-  
   
   if(option == "Normal")        command[79] = 0x00;
   else if(option == "BXReset")  command[79] = 0x01;
@@ -102,24 +99,18 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
       
     }
     
-    for(int i = 0; i < 128; i++) {
+    for(int i = 0; i < 128; i++) 
       m_avg_adc[i] = avg_ADC[i];
-      //if(m_avg_adc[i] !=0 && k>0) cout << "k=" << dec << k << endl;
-    }
+
+    m_noise = 0;
     
- 
-  m_noise = 0;
-  
-  for(int i=0; i<runs; i++) 
-    m_noise+= avg_chip[i]/((float) runs);
-  
-  
-  m_noise_rms = calculateSD(avg_chip, runs);
-  
-  output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
-  
-  
-  
+    for(int i=0; i<runs; i++) 
+      m_noise+= avg_chip[i]/((float) runs);
+        
+    m_noise_rms = calculateSD(avg_chip, runs);
+    
+    output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
+    
 }
 
 // creates output file with run(s) results
@@ -139,11 +130,8 @@ void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float a
       outfile << dec << avg_ADC[j] << endl;
   }
   
-  
   outfile.close();
-  
-
-  
+    
   return;  
   
 }
@@ -153,7 +141,6 @@ void Ana_tests::Baseline_corr() {
 
   // Set SALT to DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
-
 
   // output files to save data
   ofstream outfile, trimdac_scan;
@@ -185,9 +172,7 @@ void Ana_tests::Baseline_corr() {
       trimdac_scan << adc_base[j][i] << "\t";
       if(abs(adc_base[j][baseline[j]]) > abs(adc_base[j][i])) {
 	baseline[j]=i;
-	
       }
-      
     }
 
     // save scan data to output file
@@ -263,7 +248,7 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
   
   // Do Normal packet
   Get_run(option,runs,outText);
-  
+
   cout << "NOISE " << data_type << ": " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
 }
