@@ -105,69 +105,81 @@ printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
   Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
 
-  cout << "I2C check" << endl;
+  cout << "I2C check:" << endl;
   if(dig_com->I2C_check())
     cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
     cout << "FAIL" << endl << "FAIL" << endl;
-  
+
+  cout << "DLL configuration:" << endl;
   if(dig_com->DLL_Check())
-    cout << "DLL configuration OK" << endl;
+   cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "DLL configuration FAILED" <<endl;
+    cout << "FAIL" << endl << "FAIL" << endl;
   
-  
+  cout << "PLL configuration:" << endl;
   if(dig_com->PLL_Check())
-    cout << "PLL configuration OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "PLL configuration FAILED" <<endl;
-  
+    cout << "FAIL" << endl << "FAIL" << endl;
+
+  cout << "FPGA-DAQ sync:" << endl;
   if(dig_com->DAQ_Sync())
-    cout << "FPGA-DAQ synch OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "FPGA-DAQ synch FAILED" << endl;
-  
+    cout << "FAIL" << endl << "FAIL" << endl; 
 
   // reset TFC
   dig_com->TFC_Reset();
 
   // Synch between DSR and TFC
+  cout << "DSR and TFC synch:" << endl;
   if(dig_com->TFC_DAQ_sync())
-    cout << "DSR and TFC synch OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "DSR and TFC synch FAILED" << endl;
+    cout << "FAIL" << endl << "FAIL" << endl;
 
-  dig_com->TFC_Command_Check();  
+  cout << "TFC commands check:" << endl;
+  if(dig_com->TFC_Command_Check())
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
+  else
+    cout << "FAIL" << endl << "FAIL" << endl;
   
   // Do baseline corr
-  ana_func->Baseline_corr();
-  cout << "Baseline correction OK" << endl;
+
+  cout << "Baseline corrections:" << endl;
+  if(ana_func->Baseline_corr())
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
+  else
+    cout << "FAIL" << endl << "FAIL" << endl;
   
-    
+  cout << "Pedestal substraction:" << endl; 
   if(ana_func->Check_PedS())
-    cout << "Ped subtraction OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "Ped subtraction FAILED" << endl;
+    cout << "FAIL" << endl << "FAIL" << endl;
 
 
-  
+  cout << "MCMS:" << endl;
   if(ana_func->Check_MCMS())
-    cout << "MCM subtraction OK" << endl;
+    cout << "SUCCESS!" << endl << "PASSED!" << endl;
   else
-    cout << "MCM sbtraction FAILED" << endl;
+    cout << "FAIL" << endl << "FAIL" << endl;
 
-
-
+  /*
   ana_func->Get_noise(100,"SYNC","Normal");  
   ana_func->Get_noise(100,"PEDS","Normal");
   ana_func->Get_noise(100,"MCMS","Normal");
 
   ana_func->Get_noise(100,"SYNC","NZS");  
   ana_func->Get_noise(100,"PEDS","NZS");
+  */
+
+  // Get noise
   ana_func->Get_noise(100,"MCMS","NZS");
 
 
-   ana_func->Check_Gain();
+  //   ana_func->Check_Gain();
  cout << "done " << endl;
 
  

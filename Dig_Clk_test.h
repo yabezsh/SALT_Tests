@@ -25,7 +25,7 @@ class Dig_Clk_test {
   void unmask_all();
   bool DAQ_Sync();
   int Check_Ber(uint8_t *packet, int length);
-  int Check_Ber(uint32_t *packet, int length, uint8_t pattern);
+  int Check_Ber(uint32_t * packet, int length, uint8_t pattern);
   void FPGA_PLL_shift(int16_t phase);
   bool DLL_Check();
   bool PLL_Check();

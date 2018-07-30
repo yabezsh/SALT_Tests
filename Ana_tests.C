@@ -3,6 +3,7 @@
 #include <fstream>
 #include <cmath>
 #include <cstring>
+#include <iomanip>
 //#include "LstSquQuadRegr.h"
 //#include <gsl/gsl_sf_bessel.h>
 
@@ -32,7 +33,9 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
   bool singleShot = true;
   string data_string;
   float avg_ADC[128] = {0};
+  float std_dev[128] = {0};
   int ADC[128] = {0};
+  int ADC_runs[128][runs] = {0};
   int bxid = 0;
   int parity = 0;
   int mem_space = 0;
@@ -93,16 +96,23 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
       }
       
       for(int j=0; j<128; j++) {
+	ADC_runs[j][i] = ADC[j];
 	avg_ADC[127-j]+=ADC[j]/((float)runs);
 	avg_chip[i]+=ADC[127-j]/(128.);
 	ADC[j]=0;
       }     
       
     }
-    
-    for(int i = 0; i < 128; i++) 
-      m_avg_adc[i] = avg_ADC[i];
 
+    //   cout << "test 0" << endl;
+    for(int i = 0; i < 128; i++) {
+      m_avg_adc[i] = avg_ADC[i];
+      //cout << "test" << endl;
+      m_std_dev[i] = calculateSD(ADC_runs[i], runs);
+      //cout << "test 2 "<< endl;
+      
+    }
+   
     m_noise = 0;
     
     for(int i=0; i<runs; i++) 
@@ -138,21 +148,21 @@ void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float a
 }
 
 // baseline corrections through trim dac
-void Ana_tests::Baseline_corr() {
-
+bool Ana_tests::Baseline_corr() {
+ 
   // Set SALT to DSP output
-  salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
-
+  salt_->write_salt(registers::ser_source_cfg, (uint8_t) 0x20);
+ 
   // output files to save data
   ofstream outfile, trimdac_scan;
   outfile.open("Baseline_value.txt");
   trimdac_scan.open("Trim_DAC_scan.txt");
-
+ 
   // variables
   float adc_base[128][256] = {0};
   int baseline[128] = {0};
   float avg_baseline = 0;
-  
+
   // set commom baseline to all channels
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X84);
 
@@ -161,10 +171,10 @@ void Ana_tests::Baseline_corr() {
 
     // baseline value written to salt
     salt_->write_salt(registers::baseline_g_cfg,(uint8_t) i);
-    
+  
     Get_run("NZS",10,"no_output");
     for(int j = 0; j < 128; j++) adc_base[j][i] = m_avg_adc[j];
-    
+   
   }
 
   // loop over all baseline values and channels and find best value (lowest abs(ADC))
@@ -186,7 +196,7 @@ void Ana_tests::Baseline_corr() {
     salt_->write_salt((registers::baseline0_cfg) + j,(uint8_t) baseline[j]);
     
   }
-
+ 
   // write best trim dac setting to file
   outfile << "AVG = " << avg_baseline << endl;
   outfile << "STD_DEV = " << calculateSD(baseline,128) << endl;
@@ -200,6 +210,13 @@ void Ana_tests::Baseline_corr() {
   // revert to individual baseline value for each channel
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X04);
 
+  //  cout << "baseline 1 "<< endl;
+  
+  if(avg_baseline == 0)
+    return false;
+
+  return true;
+  
 }
 
 
@@ -250,8 +267,25 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
   // Do Normal packet
   Get_run(option,runs,outText);
 
+  for(int i = 0; i < 128; i++) {
+  
+    cout  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << "\t";
+      
+    }
+    cout << endl;
+    
+    for(int i = 0; i < 128; i++) {
+      
+      cout  << showpos << fixed << setprecision(3) << m_std_dev[i] << "\t";
+      
+    }
+    cout << endl;
+
   cout << "NOISE " << data_type << ": " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
+
+
+  
 }
 
 // checks mcmch and mcm_v
@@ -437,14 +471,14 @@ void Ana_tests::Check_Gain() {
 
 
 
-  float x[10], y[10];
+  // float x[10], y[10];
 
-  for(int i=0; i<10; i++) {
-    x[i]=i;
-    y[i] = 2*i+1;
-  }
+  // for(int i=0; i<10; i++) {
+  //   x[i]=i;
+  //   y[i] = 2*i+1;
+  // }
 
-  Check_linear(x,y,10,0.1);
+  // Check_linear(x,y,10,0.1);
   /*
   stringstream outText;
   // calibration pulse run
@@ -549,26 +583,18 @@ bool Ana_tests::Get_Quad_Coef(float x[], float y[], int PointsNum, float &a, flo
 
 bool Ana_tests::Check_linear(float x[], float y[], int size, float thresh) {
 
-  float a, b, c;
+  float a, b, c, ratio;
 
   Get_quadTerms(x,y,size,a,b,c);
-  
-  
-  //  if(!Get_Quad_Coef(x,y,size,a,b,c))
-  //return false;
-
-  float ratio = abs(c/b);
-
-  cout << "a = " << a << endl;
-  cout << "b = " << b << endl;
-  cout << "c = " << c << endl;
+  ratio = abs(c/b);
   
   if(ratio > thresh) {
-    cout << "NOT LINEAR" << endl; 
+    cout << "ERROR:: DATA SET NOT LINEAR" << endl; 
     return false;
   }
 }
 
+// my quadratic fit
 void Ana_tests::Get_quadTerms(float x[], float y[], int npoints, float &a, float &b, float &c) {
 
   float S01 = 0, S02 = 0, S03 = 0, S04 = 0, S10 = 0, S11 = 0, S12 = 0;

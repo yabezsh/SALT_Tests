@@ -25,10 +25,11 @@ class Ana_tests {
   void Check_Gain();
   void Get_noise(int runs, string data_type, string option);
   bool Check_NZS();
-  void Baseline_corr();
+  bool Baseline_corr();
   float calculateSD(float data[], int runs);
   float calculateSD(int data[], int runs);
   float m_avg_adc[128];
+  float m_std_dev[128];
   float m_noise;
   float m_noise_rms;
   int m_mcm_ch;
