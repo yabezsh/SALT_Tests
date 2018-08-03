@@ -222,24 +222,28 @@ void FastComm::read_daq(uint8_t length, uint32_t (&packet)[5120])
 
 string FastComm::read_daq(uint8_t length)
 {
-        uint64_t data;
-	stringstream data_stream;
-	// clock_t begin, end;// = clock();
-	  for(uint i = 0; i < length; i++)
-        {
-	  fpga_->read_fpga(registers::DAQ_READ0, &data);
-	  //  begin = clock();
-	    data_stream << hex << arrange_Elinks(data);
-	    //   end=clock();
-	  //packet[i]=data;
-		
-        }
-	//double elapsed_sec = double(end - begin) / CLOCKS_PER_SEC;
- //  cout << "I2C time: " << elapsed_sec << " seconds" << endl;
-	//cout << "test data stream = " << data_stream.str() << endl;
-	return data_stream.str();
-	//	arrange_Elinks(data);
-	
+  uint64_t data;
+  stringstream data_stream;
+  // clock_t begin, end;// = clock();
+  for(uint i = 0; i < length; i++)
+    {
+     
+      fpga_->read_fpga(registers::DAQ_READ0, &data);
+      //  begin = clock();
+    
+      data_stream << hex << arrange_Elinks(data);
+      //   end=clock();
+     
+      //packet[i]=data;
+      
+    }
+  //double elapsed_sec = double(end - begin) / CLOCKS_PER_SEC;
+  //  cout << "I2C time: " << elapsed_sec << " seconds" << endl;
+  //cout << "test data stream = " << data_stream.str() << endl;
+ 
+  return data_stream.str();
+  //	arrange_Elinks(data);
+  
 
 }
 
@@ -288,16 +292,18 @@ void FastComm::Take_a_run(uint16_t length_read, uint32_t (&packet)[5120], uint8_
 void FastComm::Take_a_run(uint16_t length_read, string &data, uint8_t length, uint8_t clock_delay, uint8_t command[], uint8_t period, bool singleShot, bool tfc_trig)
 {
 
-  
+ 
   // string data_stream;
   this->config_daq(length_read, clock_delay, tfc_trig);
   //if (tfc_trig)
+ 
   this->config_tfc(length, command, period, singleShot);
+ 
   this->Launch_ACQ(tfc_trig);
+  
   data = this->read_daq(length_read);
 
   
-  //cout <<"this is a test" << endl;
   //cout << "string is " << data << endl;
   //read_NZS_packet(data_stream);
   		reset_DAQ();

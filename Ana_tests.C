@@ -104,13 +104,15 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
       
     }
 
-    //   cout << "test 0" << endl;
+    // vector<int> h1;
+    
+    
     for(int i = 0; i < 128; i++) {
       m_avg_adc[i] = avg_ADC[i];
-      //cout << "test" << endl;
       m_std_dev[i] = calculateSD(ADC_runs[i], runs);
-      //cout << "test 2 "<< endl;
-      
+      //h1 = histogram(m_hmin,m_bins,ADC_runs[i],runs);
+      //m_hist[i]=h1;
+      //h1.clear();
     }
    
     m_noise = 0;
@@ -221,9 +223,8 @@ bool Ana_tests::Baseline_corr() {
 
 
 // check noise functionality of chip. Specify run number and data output stream type, i.e. masked ch ("MASK"), sync ch ("SYNC"), after ped sub ("PEDS"), after mcm("MCMS"), and either Normal or NZS data packet
-void Ana_tests::Get_noise(int runs, string data_type, string option) {
+bool Ana_tests::Get_noise(int runs, string data_type, string option) {
   
-  //option = "NZS";
   string outText;
   uint8_t buffer=0x00;
 
@@ -234,8 +235,7 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
   // DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
   
-  // loop over different data streams, i.e. masked ADC, sync ADC, after ped, after mcms
-
+  // check which data stream is selected
   if(data_type == "MASK")
     buffer = 0x00;
   else if(data_type == "SYNC")
@@ -246,6 +246,7 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
     buffer = 0x60;
   else {
     cout << "ERROR:: Data stream not properly defined" << endl;
+    return false;
   }
   
   salt_->write_salt(registers::n_zs_cfg, buffer);
@@ -260,32 +261,78 @@ void Ana_tests::Get_noise(int runs, string data_type, string option) {
   else {
     
     cout <<"ERROR::n_zs_cfg not properly defined" << endl;
-    return;
+    return false;
     
   }
   
   // Do Normal packet
   Get_run(option,runs,outText);
 
-  for(int i = 0; i < 128; i++) {
   
-    cout  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << "\t";
-      
-    }
-    cout << endl;
-    
-    for(int i = 0; i < 128; i++) {
-      
-      cout  << showpos << fixed << setprecision(3) << m_std_dev[i] << "\t";
-      
-    }
-    cout << endl;
 
-  cout << "NOISE " << data_type << ": " << m_noise << " +- " << m_noise_rms << endl;
+  cout << "NOISE = " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
 
+  //m_hmin=-10;
+  //m_bins=20;
+  
+  adc_output();
+  return true;
 
   
+}
+
+void Ana_tests::adc_output() {
+  
+  for(int i = 0; i < 128; i++) {
+    
+    cout  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << "\t";
+    
+  }
+  cout << endl;
+  
+  for(int i = 0; i < 128; i++) {
+    
+    cout  << showpos << fixed << setprecision(3) << m_std_dev[i] << "\t";
+    
+  }
+  cout << endl;
+  
+  // cout << m_hmin << endl << m_bins << endl;
+  // for(int i = 0; i < 128; i++) {
+    
+  //   for(int j = 0; j < m_bins; j++) {
+      
+  //     cout << setprecision(3) << m_hist[i].at(j) << "\t";
+      
+  //   }
+  //     cout << endl;
+      
+  // }
+}
+
+// make histogram
+vector<int> Ana_tests::histogram(int start, int bins, int data[], int size) {
+
+  int counter = 0;
+  vector<int> hist;
+  
+  for (int i = start; i < (start + bins); i++) {
+
+    counter = 0;
+    
+    for(int j=0; j< size; j++) {
+
+      if(data[j]>=i && data[j] <i+1) counter++;
+
+    }
+
+    hist.push_back(counter);
+    
+  }
+
+  return hist;
+
 }
 
 // checks mcmch and mcm_v
@@ -486,7 +533,7 @@ void Ana_tests::Check_Gain() {
   salt_->write_salt(registers::calib_enable0_cfg,(uint8_t) 0x0F);
   salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x20);
   
-  //Get_run("Calib",1,true,"test_pulse");
+  //Get_run("Calib",1,"test_pulse");
   
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
   salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 31);   
@@ -510,74 +557,10 @@ void Ana_tests::Check_Gain() {
  
   }
    salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
-  */
 }
-
-bool Ana_tests::Get_Quad_Coef(float x[], float y[], int PointsNum, float &a, float &b, float &c) {
-
-
-	const double S00=PointsNum;//points number
-	double S40=0, S10=0, S20=0, S30=0, S01=0, S11=0, S21 = 0;
-	double value = 0, indexPow2 = 0;
-	const double MINvalue = y[0];
-	const double MINtime = x[0];
-	int index = -1;
-	for (int i=0; i<PointsNum; i++ ){
-		index = x[i] - MINtime;
-		value = (y[i] - MINvalue); //normalizing
-//		cout << "i=" << i << " index=" << index << " value=" << value << endl;
-		S40+= pow(index,4);
-		S30+= pow(index,3);
-		indexPow2 = pow(index,2);
-		S20+= indexPow2;
-		S10+= index;
-
-		S01 += value;
-		S11 += value*index;
-		S21 += value*indexPow2;
-	}
+  */
 
 
-	double S20squared = pow(S20,2);
-	//minors M_ij=M_ji
-	double M11 = S20*S00;
-	M11 -= pow(S10,2);
-
-	double M21 = S30*S00;
-	M21 -= S20*S10;
-	double M22 = S40*S00;
-	M22 -= S20squared;
-	double M31 = S30*S10;
-	M31 -= S20squared;
-
-	double M32 = S40*S10;
-	M32 -= S20*S30;
-//	double M33 = S40*S20 - pow(S30,2);
-
-	double discriminant = S40*M11;
-	discriminant -= S30*M21;
-	discriminant += S20*M31;
-//	cout << "discriminant=" << discriminant << endl;
-	if (abs(discriminant) < .00000000001) return  false;
-
-	double Da = S21*M11;
-	Da -= S11*M21;
-	Da += S01*M31;
-	a = Da/discriminant;
-//	cout << "discriminant=" << discriminant;
-//	cout << " Da=" << Da;
-
-	double Db = -S21*M21;
-	Db += S11*M22;
-	Db -= S01*M32;
-	b = Db/discriminant;
-//	cout << " Db=" << Db << endl;
-
-
-	
-	//critPoint = -Db/(2*Da) + MINtime; //-b/(2*a)= -Db/discriminant / (2*(Da/discriminant)) = -Db/(2*Da);
-
-		return true;
 
 }
 

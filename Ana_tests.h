@@ -8,6 +8,7 @@
 #include "Fpga.h"
 #include "fastComm.h"
 #include <fstream>
+#include <vector>
 
 using namespace std;
 
@@ -23,17 +24,23 @@ class Ana_tests {
   void output_file(int runs, float avg_ADC[], float avg_chip[], float avg_noise, float length_avg, string outText, string option);
   void Trim_dac_scan();
   void Check_Gain();
-  void Get_noise(int runs, string data_type, string option);
+  bool Get_noise(int runs, string data_type, string option);
   bool Check_NZS();
   bool Baseline_corr();
   float calculateSD(float data[], int runs);
   float calculateSD(int data[], int runs);
+  void adc_output();
+  vector<int> histogram(int start, int bins, int data[], int size);
+  //vector<int> m_hist[128];
+  int m_hmin;
+  int m_bins;
   float m_avg_adc[128];
   float m_std_dev[128];
   float m_noise;
   float m_noise_rms;
   int m_mcm_ch;
   int m_mcm_v;
+  // vector<int> hist;
   bool Check_PedS();
   bool Check_MCMS();
   bool Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v);

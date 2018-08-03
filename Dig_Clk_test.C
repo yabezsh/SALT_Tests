@@ -413,7 +413,8 @@ bool Dig_Clk_test::TFC_Command_Check() {
   // set synch pattern registers
   salt_->write_salt(registers::sync1_cfg,(uint8_t) 0x8C);
   salt_->write_salt(registers::sync0_cfg,(uint8_t) 0xAB);
-  
+
+ 
   // check TFC commands
   string option[8];
   bool pass[8] = {false};
@@ -438,15 +439,16 @@ bool Dig_Clk_test::TFC_Command_Check() {
     else if(option[i] == "BxVeto")   command[79] = 0x10;
     else if(option[i] == "Snapshot") command[79] = 0x20;
     else if(option[i] == "Synch")    command[79] = 0x40;
+
+ 
     
     fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );
 
     for(int j=0; j<data_string.length(); j+=3) {
-      
+     
       twelveBits = fastComm_->read_twelveBits(data_string, j);
       if(twelveBits == 0x0F0) continue;
       fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
-      
       
       if(flag == 0) {
 	if(option[i] == "Normal") pass[i] = true;

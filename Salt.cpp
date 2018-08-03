@@ -4,7 +4,7 @@
 
 Salt::Salt(int8_t bus_number,int8_t device_address) : I2C( bus_number, device_address)
 {
-  std::cout <<  "SALT open bus" << std::endl;
+  //  std::cout <<  "SALT open bus" << std::endl;
     this->open_bus();
 }
 Salt::~Salt(){}
