@@ -312,28 +312,28 @@ void Ana_tests::adc_output() {
 }
 
 // make histogram
-vector<int> Ana_tests::histogram(int start, int bins, int data[], int size) {
+// vector<int> Ana_tests::histogram(int start, int bins, int data[], int size) {
 
-  int counter = 0;
-  vector<int> hist;
+//   int counter = 0;
+//   vector<int> hist;
   
-  for (int i = start; i < (start + bins); i++) {
+//   for (int i = start; i < (start + bins); i++) {
 
-    counter = 0;
+//     counter = 0;
     
-    for(int j=0; j< size; j++) {
+//     for(int j=0; j< size; j++) {
 
-      if(data[j]>=i && data[j] <i+1) counter++;
+//       if(data[j]>=i && data[j] <i+1) counter++;
 
-    }
+//     }
 
-    hist.push_back(counter);
+//     hist.push_back(counter);
     
-  }
+//   }
 
-  return hist;
+//   return hist;
 
-}
+// }
 
 // checks mcmch and mcm_v
 bool Ana_tests::Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v) {
