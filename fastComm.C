@@ -222,7 +222,7 @@ void FastComm::read_daq(uint8_t length, uint32_t (&packet)[5120])
 
 string FastComm::read_daq(uint8_t length)
 {
-  uint64_t data;
+  uint32_t data;
   stringstream data_stream;
   // clock_t begin, end;// = clock();
   for(uint i = 0; i < length; i++)
