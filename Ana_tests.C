@@ -40,6 +40,7 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
   int parity = 0;
   int mem_space = 0;
   int flag = 0;
+  
   int length1= 0;
   unsigned twelveBits;
   length_read = 255;
@@ -104,17 +105,20 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
       
     }
 
-    // vector<int> h1;
-    
-    
+     
+    m_hmin = -10;
+    m_bins = 20;
+
     for(int i = 0; i < 128; i++) {
       m_avg_adc[i] = avg_ADC[i];
       m_std_dev[i] = calculateSD(ADC_runs[i], runs);
-      //h1 = histogram(m_hmin,m_bins,ADC_runs[i],runs);
-      //m_hist[i]=h1;
+      histogram(m_hmin,m_bins,ADC_runs[i],runs, i);
+
       //h1.clear();
     }
-   
+
+
+    
     m_noise = 0;
     
     for(int i=0; i<runs; i++) 
@@ -123,7 +127,8 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
     m_noise_rms = calculateSD(avg_chip, runs);
     
     output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
-    
+
+    //cout << "test4" << endl;
 }
 
 // creates output file with run(s) results
@@ -168,17 +173,22 @@ bool Ana_tests::Baseline_corr() {
   // set commom baseline to all channels
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X84);
 
+
+  //cout << "blah" << endl;
   //get a number of runs for each baseline value
   for(int i = 0; i < 256 ; i++) {
-
+    //cout << "testing" << endl;
     // baseline value written to salt
     salt_->write_salt(registers::baseline_g_cfg,(uint8_t) i);
   
     Get_run("NZS",10,"no_output");
+    //cout << "trim dac = " << i << endl;
     for(int j = 0; j < 128; j++) adc_base[j][i] = m_avg_adc[j];
-   
+
+    //cout << "done" << endl;
   }
 
+  cout << "test5" << endl;
   // loop over all baseline values and channels and find best value (lowest abs(ADC))
   for(int j = 0; j < 128; j++) {
     for(int i=0; i<256; i++) {
@@ -196,28 +206,34 @@ bool Ana_tests::Baseline_corr() {
 
     // write best value to salt register
     salt_->write_salt((registers::baseline0_cfg) + j,(uint8_t) baseline[j]);
-    
+    //cout << "ch " << j << " set" << endl;
   }
- 
+
+  //cout << "test 6" << endl;
   // write best trim dac setting to file
   outfile << "AVG = " << avg_baseline << endl;
   outfile << "STD_DEV = " << calculateSD(baseline,128) << endl;
   for(int i = 0; i < 128; i++)
     outfile << dec << baseline[i] << endl;
-  
+
+  //cout << "test 7 " << endl;
   // close output files
   outfile.close();
+  //cout << "test 7.1 " << endl;
   trimdac_scan.close();
+
+  //cout << "test8" << endl;
   
   // revert to individual baseline value for each channel
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X04);
 
-  //  cout << "baseline 1 "<< endl;
+  //cout << "baseline 1 "<< endl;
   
   if(avg_baseline == 0)
     return false;
 
   return true;
+
   
 }
 
@@ -273,16 +289,19 @@ bool Ana_tests::Get_noise(int runs, string data_type, string option) {
   cout << "NOISE = " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
 
-  //m_hmin=-10;
-  //m_bins=20;
+  m_hmin=-10;
+  m_bins=20;
   
-  adc_output();
+  //adc_output();
   return true;
 
   
 }
 
-void Ana_tests::adc_output() {
+void Ana_tests::adc_output(int min, int bins) {
+
+  
+  int hist[m_bins];
   
   for(int i = 0; i < 128; i++) {
     
@@ -297,6 +316,20 @@ void Ana_tests::adc_output() {
     
   }
   cout << endl;
+
+  cout << noshowpos << dec << min << endl;
+  cout << bins << endl;
+
+  
+  
+  for(int i = 0; i < 128; i++) {
+
+    for(int j=min+32; j< min+32+bins; j++) {  
+      cout << adc_hist[i][j] << "\t";
+      
+    }
+    cout << endl;
+  }
   
   // cout << m_hmin << endl << m_bins << endl;
   // for(int i = 0; i < 128; i++) {
@@ -312,28 +345,47 @@ void Ana_tests::adc_output() {
 }
 
 // make histogram
-// vector<int> Ana_tests::histogram(int start, int bins, int data[], int size) {
+void Ana_tests::histogram(int start, int bins, int data[], int size, int ch) {
 
-//   int counter = 0;
-//   vector<int> hist;
+  start=start+32;
+  int counter = 0;
+  //int hist[64] = {0};
+  //adc_hist[ch]=hist;
+
+  //cout << "defining histo" << endl;
+  //cout << "size is " << size << endl;
+  //cout << "start is " << start << endl;
   
-//   for (int i = start; i < (start + bins); i++) {
+  //for(int i=0; i < 128; i++)
+  //for(int j=0; j < 64; j++)
+  //   adc_hist[i][j]=0;
+  
+   if(start+bins > 64) {
+     cout << "ERROR::Histogram defined to be out of range" << endl;
+     return;
+   }
+   
+   for (int i = start; i < (start + bins); i++) {
 
-//     counter = 0;
-    
-//     for(int j=0; j< size; j++) {
+     counter = 0;
+     
+     for(int j=0; j< size; j++) {
 
-//       if(data[j]>=i && data[j] <i+1) counter++;
-
-//     }
-
-//     hist.push_back(counter);
-    
-//   }
-
-//   return hist;
-
-// }
+       
+       // cout << "data[" << dec << j << "] = " << data[j] << endl;
+       // cout << "i = " << dec << i << endl;
+       if((data[j]>=(i-32)) && (data[j] <(i+1-32))) counter++;
+       
+     }
+     //cout << "counter is " << counter << endl;
+     
+     adc_hist[ch][i]=counter;
+     
+   }
+   
+   
+   
+}
 
 // checks mcmch and mcm_v
 bool Ana_tests::Check_MCMS(float ADC[128], int mcm1, int mcm2, int mcm_ch, int mcm_v) {

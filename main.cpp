@@ -133,12 +133,7 @@ adc1115->inVolts(&adc_counts, &v);
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
       else
 	cout << "FAIL" << endl << "FAILED" << endl;
-      
-      // cout << "PLL configuration:" << endl;
-      // if(dig_com->PLL_Check())
-      // 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
-      // else
-      // 	cout << "FAIL" << endl << "FAILED" << endl;
+
     }
     
     if( (arg.at(i) == "fpga_daq_sync") || (arg.at(i) == "all")) {
@@ -194,8 +189,10 @@ adc1115->inVolts(&adc_counts, &v);
     // Get noise
     if( (arg.at(i) == "noise_run") || (arg.at(i) == "all")) {
       cout << "Noise MCMS run:" << endl;
-      if(ana_func->Get_noise(100,"MCMS","NZS"))
+      if(ana_func->Get_noise(100,"MCMS","NZS")) {
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
+	ana_func->adc_output(-10,20);
+      }
       else
 	cout << "FAIL" << endl << "FAILED" << endl;
     }
@@ -203,6 +200,7 @@ adc1115->inVolts(&adc_counts, &v);
   }
   
   
+
   
   /*
     Salt *st = new Salt();

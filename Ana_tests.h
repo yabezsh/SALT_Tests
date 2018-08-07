@@ -8,7 +8,7 @@
 #include "Fpga.h"
 #include "fastComm.h"
 #include <fstream>
-#include <vector>
+//#include <vector>
 
 using namespace std;
 
@@ -29,8 +29,8 @@ class Ana_tests {
   bool Baseline_corr();
   float calculateSD(float data[], int runs);
   float calculateSD(int data[], int runs);
-  void adc_output();
-  vector<int> histogram(int start, int bins, int data[], int size);
+  void adc_output(int min, int bins);
+  void histogram(int start, int bins, int data[], int size, int ch);
   //vector<int> m_hist[128];
   int m_hmin;
   int m_bins;
@@ -40,6 +40,8 @@ class Ana_tests {
   float m_noise_rms;
   int m_mcm_ch;
   int m_mcm_v;
+  // int m_hist[128];
+  int adc_hist[128][64];
   // vector<int> hist;
   bool Check_PedS();
   bool Check_MCMS();
