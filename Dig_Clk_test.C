@@ -158,13 +158,20 @@ bool Dig_Clk_test::DLL_Check() {
   
   while((read & 0x80) == 0x00) {
     salt_->read_salt(registers::dll_vcdl_cfg, &read);
+   
+    //if(read == 0x80) break;
     read=read-1;
     salt_->write_salt(registers::dll_vcdl_cfg,read);
     
     usleep(1);
     
     salt_->read_salt(registers::dll_vcdl_mon, &read);
+
+   
+    
   }
+
+  salt_->write_salt(registers::others_g_cfg,(uint8_t) 0xC0);
   
   
   return true;

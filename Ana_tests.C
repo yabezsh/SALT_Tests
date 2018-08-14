@@ -52,14 +52,15 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
   for(int i=0; i<79; i++)
     command[i]=0x04;
   
-  if(option == "Normal")        command[79] = 0x00;
-  else if(option == "BXReset")  command[79] = 0x01;
-  else if(option == "Header")   command[79] = 0x04;
-  else if(option == "NZS")      command[79] = 0x08;
-  else if(option == "BxVeto")   command[79] = 0x10;
-  else if(option == "Snapshot") command[79] = 0x20;
-  else if(option == "Synch")    command[79] = 0x40;
-  else if(option == "Calib")    command[79] = 0x80;
+  if(option == "Normal")          command[79] = 0x00;
+  else if(option == "BXReset")    command[79] = 0x01;
+  else if(option == "Header")     command[79] = 0x04;
+  else if(option == "NZS")        command[79] = 0x08;
+  else if(option == "BxVeto")     command[79] = 0x10;
+  else if(option == "Snapshot")   command[79] = 0x20;
+  else if(option == "Synch")      command[79] = 0x40;
+  else if(option == "Calib")      command[79] = 0x80;
+  else if(option == "Calib_NZS") {command[79] = 0x80; command[80] = 0x08;}
   else {
     cout << "ERROR: Output packet not properly defined." << endl;  
     return;  
@@ -75,11 +76,11 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
 	fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);      
 
 	// check flag bit to see if normal data packet
-	if(flag == 0) {
+	if((flag == 0) && (option != "Calib_NZS")) {
 
 	  length_avg+=length1/((float) runs);
 
-	  if(length1 == 0) continue;
+	  if(length1 == 0 ) continue;
 	  
 	  fastComm_->read_Normal_packet(data_string, j, ADC);
 	  break;
@@ -106,15 +107,13 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
     }
 
      
-    m_hmin = -10;
-    m_bins = 20;
-
+    
     for(int i = 0; i < 128; i++) {
       m_avg_adc[i] = avg_ADC[i];
       m_std_dev[i] = calculateSD(ADC_runs[i], runs);
-      histogram(m_hmin,m_bins,ADC_runs[i],runs, i);
+      histogram(-32,64,ADC_runs[i],runs, i);
 
-      //h1.clear();
+     
     }
 
 
@@ -288,60 +287,44 @@ bool Ana_tests::Get_noise(int runs, string data_type, string option) {
 
   cout << "NOISE = " << m_noise << " +- " << m_noise_rms << endl;
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
-
-  m_hmin=-10;
-  m_bins=20;
   
-  //adc_output();
   return true;
-
   
 }
 
 void Ana_tests::adc_output(int min, int bins) {
 
-  
-  int hist[m_bins];
-  
+  // adv avg value
   for(int i = 0; i < 128; i++) {
     
-    cout  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << "\t";
-    
-  }
-  cout << endl;
-  
-  for(int i = 0; i < 128; i++) {
-    
-    cout  << showpos << fixed << setprecision(3) << m_std_dev[i] << "\t";
+    cout  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << " ";
     
   }
   cout << endl;
 
+  // std dev
+  for(int i = 0; i < 128; i++) {
+    
+    cout  << showpos << fixed << setprecision(3) << m_std_dev[i] << " ";
+    
+  }
+  cout << endl;
+
+  // histogram min and number of bins
   cout << noshowpos << dec << min << endl;
   cout << bins << endl;
 
   
-  
+  // output histogram results for each channel
   for(int i = 0; i < 128; i++) {
 
     for(int j=min+32; j< min+32+bins; j++) {  
-      cout << adc_hist[i][j] << "\t";
+      cout << setfill('0') << setw(3) << adc_hist[i][j] << " ";
       
     }
     cout << endl;
   }
   
-  // cout << m_hmin << endl << m_bins << endl;
-  // for(int i = 0; i < 128; i++) {
-    
-  //   for(int j = 0; j < m_bins; j++) {
-      
-  //     cout << setprecision(3) << m_hist[i].at(j) << "\t";
-      
-  //   }
-  //     cout << endl;
-      
-  // }
 }
 
 // make histogram
@@ -667,4 +650,57 @@ void Ana_tests::Get_quadTerms(float x[], float y[], int npoints, float &a, float
   b = 1/(b2-a2)*( (b4-a4) +(b3-a3)*c);
 
   a = a4-a2*b-a3*c;
+}
+
+void Ana_tests::set_calib_fifo() {
+
+  float best=0;
+  bool flag =  false;
+  int best_l = 0;
+  int best_c = 0;
+  
+  salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) 0x06);
+  // calibration pulse run
+  salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x05);
+  for(int i = 0x307; i < 0x317; i++) {
+    
+    salt_->write_salt(i,(uint8_t) 0xFF);
+
+    }
+  salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x20);
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
+  salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 0x31);   
+ 
+  for(int i=0; i < 8 ; i++) {
+
+    
+    salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) i);
+    for(int j = 0; j < 64; j=j+4) {
+      salt_->write_salt(registers::adc_clk_cfg, (uint8_t) j);
+
+      
+      
+      Get_run("Calib", 10, "Calib");
+      
+      //best = m_noise;
+      if(abs(m_noise) > abs(best)){
+	best = m_noise;
+	best_l = i;
+	best_c = j;
+	//adc_output(-10,20);
+
+	
+      }
+    
+    }
+    
+  }
+  salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) best_l);
+  
+  salt_->write_salt(registers::adc_clk_cfg, (uint8_t) best_c);
+  Get_run("Calib", 100, "Calib");
+  cout << "i = " << best_l << endl;
+  cout << "j = " << best_c << endl;
+  cout << "ADC_avg = "  << m_noise << " +- " << m_noise_rms << endl;
+  adc_output(-32,64);
 }

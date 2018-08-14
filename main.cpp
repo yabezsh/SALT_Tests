@@ -107,6 +107,10 @@ adc1115->inVolts(&adc_counts, &v);
   Dig_Clk_test *dig_com = new Dig_Clk_test(fpga,st,fastComm);
   Ana_tests *ana_func = new Ana_tests(fpga,st,fastComm);
   vector<string> arg;
+
+  // soft reset of SALT
+  st->write_salt(0x601,(uint8_t) 1);
+  st->write_salt(0x600,(uint8_t) 1);
   
   if(argc == 1) {
     
@@ -197,6 +201,19 @@ adc1115->inVolts(&adc_counts, &v);
 	cout << "FAIL" << endl << "FAILED" << endl;
     }
     //   ana_func->Check_Gain();
+
+
+   
+
+    // uint8_t buffer=0;
+    // // st->read_salt(0x300,&buffer);
+    // // if(buffer != 0x80)
+    // //   buffer = 0x80;
+    // // st->write_salt(0x300,buffer);
+    // ana_func->set_calib_fifo();
+    
+    // cout << "others is " << hex << (unsigned) buffer << endl;
+    
   }
   
   

@@ -31,6 +31,7 @@ class Ana_tests {
   float calculateSD(int data[], int runs);
   void adc_output(int min, int bins);
   void histogram(int start, int bins, int data[], int size, int ch);
+  void set_calib_fifo();
   //vector<int> m_hist[128];
   int m_hmin;
   int m_bins;
