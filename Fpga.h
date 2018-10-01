@@ -19,6 +19,7 @@
 #include <cerrno>
 #include <cstring>
 
+#include "registers_config.h"
 
 #define HW_REGS_BASE ( 0xfc000000) //ALT_STM_OFST )
 #define HW_REGS_SPAN ( 0x04000000 ) //64 MB with 32 bit adress space this is 256 MB
@@ -37,6 +38,8 @@ class Fpga {
 	void write_fpga(uint32_t, uint16_t);
 	void read_fpga(uint32_t,uint8_t*);
         void write_fpga(uint32_t, uint8_t);
+
+	void read_DAQ_READ0(uint32_t* data);
 	
         void close_fpga();
     
@@ -53,6 +56,7 @@ class Fpga {
         
         void *map_virtual_addr;
         void *map_register_address;
+	void *DAQ_READ0_register_address;
         
         int memFile;
     

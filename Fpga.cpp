@@ -27,7 +27,7 @@ void Fpga::access_fpga()
   
       //lightweight HPS-to-FPGA bridge
     map_virtual_addr = mmap(0,HW_REGS_SPAN,PROT_READ | PROT_WRITE,MAP_SHARED,memFile,HW_REGS_BASE);
-   
+    DAQ_READ0_register_address = map_virtual_addr + ( ( uint32_t )( (unsigned long) (ALT_LWFPGASLVS_OFST + registers::DAQ_READ0 )) & ( uint32_t )( HW_REGS_MASK ) );
     if( map_virtual_addr == MAP_FAILED )
     {
         int errvsv = errno;
@@ -57,8 +57,12 @@ void Fpga::read(uint64_t* data)
 void Fpga::read(uint8_t* data)
 {
     *data = *( ( uint32_t *) map_register_address );
-}
+} 
 
+void Fpga::read_DAQ_READ0(uint32_t* data)
+{
+    *data = *( ( uint32_t *) DAQ_READ0_register_address );
+}
 
 void Fpga::read_fpga(uint32_t register_address,uint32_t* data)
 {

@@ -7,7 +7,7 @@
 #include "fastComm.h"
 #include "Dig_Clk_test.h"
 #include "Ana_tests.h"
-
+#include <time.h>
 #include "hwlib.h"
 #include "socal/socal.h"
 #include "socal/hps.h"
@@ -17,7 +17,7 @@
 
 int main(int argc, char *argv[])
 {
-  //    ExternalADC *adc1115 = new ExternalADC(0b01001000,0b11110011,0b11110011);
+  //     ExternalADC *adc1115 = new ExternalADC(0b01001000,0b11110011,0b11110011);
   /*ExternalADC *adc1115 = new ExternalADC(0b01001000,1);
     adc1115->access_device();
     uint16_t adc_counts = 0;
@@ -100,6 +100,11 @@ adc1115->inVolts(&adc_counts, &v);
     printf("Monitor 2: HEX 0x%02x\n  or  %f mA \n",cur_counts, amp);
   */
   
+clock_t start;
+clock_t finish;
+
+start = clock();
+
   // initial definitions
   Fpga *fpga = new Fpga();
   Salt *st = new Salt(1,5);
@@ -115,20 +120,23 @@ adc1115->inVolts(&adc_counts, &v);
   if(argc == 1) {
     
     cout << "ERROR::MUST PROVIDE AN ARGUMENT!!!" << endl;
+    cout << "Example: ./main i2c dll_pll fpga_daq_sync dsr_tfc_sync" << endl;
     return 0; 
   }
   
   for(int i=1; i < argc; i++)
     arg.push_back(argv[i]);
-  
-  
+
   for(int i=0; i < arg.size(); i++) {
     if( (arg.at(i)== "i2c") || (arg.at(i) == "all")) {
       cout << "I2C check:" << endl;
       if(dig_com->I2C_check())
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
       else
-	cout << "FAIL" << endl << "FAILED" << endl;
+	{
+	  cout << "FAIL" << endl << "FAILED" << endl;
+	  exit(-1);
+	}
     }
     
     if( (arg.at(i)== "dll_pll") || (arg.at(i) == "all")) {
@@ -136,8 +144,10 @@ adc1115->inVolts(&adc_counts, &v);
       if(dig_com->DLL_Check() && dig_com->PLL_Check())
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
       else
-	cout << "FAIL" << endl << "FAILED" << endl;
-
+	{
+	  cout << "FAIL" << endl << "FAILED" << endl;
+	  exit(-1);
+	}
     }
     
     if( (arg.at(i) == "fpga_daq_sync") || (arg.at(i) == "all")) {
@@ -146,7 +156,7 @@ adc1115->inVolts(&adc_counts, &v);
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
       else
 	cout << "FAIL" << endl << "FAILED" << endl; 
-    }
+    } 
     if( (arg.at(i) == "dsr_tfc_sync") || (arg.at(i) == "all")) {
       // reset TFC
       dig_com->TFC_Reset();
@@ -173,7 +183,16 @@ adc1115->inVolts(&adc_counts, &v);
       else
 	cout << "FAIL" << endl << "FAILED" << endl;
     }
-    
+    if( (arg.at(i) == "zs") || (arg.at(i) == "all")) {
+      cout << "Zero supression:" << endl; 
+      if(ana_func->Check_NZS())
+	cout << "SUCCESS!" << endl << "PASSED!" << endl;
+      else
+	cout << "FAIL" << endl << "FAILED" << endl;
+    }
+
+
+
     if( (arg.at(i) == "pedestal") || (arg.at(i) == "all")) {
       cout << "Pedestal substraction:" << endl; 
       if(ana_func->Check_PedS())
@@ -195,14 +214,50 @@ adc1115->inVolts(&adc_counts, &v);
       cout << "Noise MCMS run:" << endl;
       if(ana_func->Get_noise(100,"MCMS","NZS")) {
 	cout << "SUCCESS!" << endl << "PASSED!" << endl;
-	ana_func->adc_output(-10,20);
+	ana_func->adc_output(-32,64);
       }
       else
 	cout << "FAIL" << endl << "FAILED" << endl;
     }
-    //   ana_func->Check_Gain();
+    if((arg.at(i) == "calib_fifo") || (arg.at(i) == "all")) {
+	    cout << "CALIB FIFO and ADC clk delay:" << endl;	
+	    if(ana_func->set_calib_fifo())
+		    cout << "SUCCESS!" << endl << "PASSED!" << endl;
 
+    
+	    else
+		    cout << "FAIL" << endl << "FAILED" << endl;
+    }
 
+    if( (arg.at(i) == "gain") || (arg.at(i) == "all")) {
+   	cout << "Gain test:" << endl;
+	   if(ana_func->Check_Gain())
+		cout << "SUCCESS!" << endl << "PASSED!" << endl;
+	   else
+	        cout << "FAIL" << endl << "FAILED" << endl;
+
+    }
+
+    if ((arg.at(i) == "test") )
+    {
+	unsigned Integer32  = 0x12345678;
+	uint8_t *Decomposed = (uint8_t *)&Integer32;
+	cout << hex << (int) Decomposed[0] << endl; 
+	cout << hex << (int) Decomposed[1] << endl; 
+	cout << hex << (int) Decomposed[2] << endl; 
+	cout << hex << (int) Decomposed[3] << endl; 
+    }
+
+    finish = clock();
+
+cout << "Total time = " << (float) (finish-start)/CLOCKS_PER_SEC << " seconds" << endl;
+
+    //if((arg.at(i) == "calib_fifo") ) {
+//
+//	    cout << "CALIB FIFO" << endl;	
+//	ana_func->set_calib_fifo();
+
+  //  }
    
 
     // uint8_t buffer=0;
