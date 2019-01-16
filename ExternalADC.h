@@ -2,6 +2,9 @@
 #pragma once
 
 #include "I2C.h"
+#include <fstream>
+#include <cstring>
+#include <iomanip>
 
 class ExternalADC :  public I2C {
     public:

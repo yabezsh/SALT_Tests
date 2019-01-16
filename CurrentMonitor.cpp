@@ -33,9 +33,16 @@ void CurrentMonitor::read_current(uint16_t *current_counts)
 //    printf("Values: HEX 0x%02x\n  or  %i mA \n",*current_counts, (*current_counts)/20);
 }
 
+void CurrentMonitor::read_BusVoltage_mV(int *BusVoltage_mV)
+{
+	uint16_t temp;
+    read_buffer(0x02, &temp);
+	*BusVoltage_mV= (temp >> 3) * 4;
+}
+
 void CurrentMonitor::convert_to_amp(uint16_t* current_counts, float* value)
 {
- printf("Sorry! Convertion to volts is not finished! It works only for the default bits configuration. Fot others it's nessacery convert by yourself based on manual. You need to count LSB value for your configuration");
+ //printf("Sorry! Convertion to volts is not finished! It works only for the default bits configuration. Fot others it's nessacery convert by yourself based on manual. You need to count LSB value for your configuration");
  *value = (*current_counts)/20;
 }
 

@@ -86,7 +86,7 @@ void I2C::write_buffer(uint8_t register_address, uint8_t bit_7_0)
 
 void I2C::read_buffer(uint8_t register_address, uint16_t* data)
 {
-    printf("in I2C:  register_address  -  0x%02x\n",register_address);
+    //printf("in I2C:  register_address  -  0x%02x\n",register_address);
     uint8_t buffer[3] = {register_address, 0, 0};
   //  uint8_t buffer[3] = {0x01, 0, 0};
     

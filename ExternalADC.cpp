@@ -7,7 +7,7 @@ ExternalADC::~ExternalADC(){}
 
 void ExternalADC::read_adc(uint16_t *adc_counts)
 {   
-    bit_15_8 = 0b11110011;
+    bit_15_8 = 0b10010011;
     bit_7_0 = 0b10000101;
     config_register = 1;
     convers_register = 0;
@@ -16,7 +16,8 @@ void ExternalADC::read_adc(uint16_t *adc_counts)
     {
        read_buffer(convers_register, adc_counts); 
     }
-    printf("Values: HEX 0x%02x\n  or in volts: %4.3f \n",*adc_counts, (*adc_counts)*4.096/32768.0);
+ //   printf("Values: HEX 0x%02x\n  or in volts: %4.3f \n",*adc_counts, (*adc_counts)*4.096/32768.0);
+    std::cout << "Power consumption in volts: " << std::showpos << std::fixed << std::dec <<std::setprecision(4) << (*adc_counts)*4.096/32768.0 << std::endl;
 }
 
 bool ExternalADC::isConversed()

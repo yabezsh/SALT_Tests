@@ -8,6 +8,7 @@
 #include <iostream>
 #include <ctime>
 #include <fstream>
+#include <iomanip>
 
 using namespace std;
 
@@ -96,6 +97,10 @@ int Dig_Clk_test::Check_Ber(uint32_t *packet, int length, uint8_t pattern) {
 bool Dig_Clk_test::DLL_Check() {
   uint8_t read=0;
   uint8_t vcdl_value;
+
+  salt_->write_salt(registers::others_g_cfg,(uint8_t) 0x00);
+
+
   for (vcdl_value=0x60; vcdl_value < 0x7F; vcdl_value ++)  
   { //Only 16 phases to check!
   		salt_->write_salt(registers::dll_vcdl_cfg, vcdl_value);
@@ -183,7 +188,7 @@ bool Dig_Clk_test::TFC_DAQ_sync() {
     //cout << "command = " << dec << (unsigned) command[0] << endl;
     // loop over pll_clk_cfg values
     for(int i=0; i<16; i++) {
-      if (i_value_bad[i]) {break;} //Avoid testing if no valid pll_clk_cfg was found
+      //if (i_value_bad[i]) {break;} //Avoid testing if no valid pll_clk_cfg was found
       if(rightConfig) break;     //Do not keep on testing once we've decided the good one
 
       salt_->write_salt(registers::pll_clk_cfg, (uint8_t) (16*i+((i+7)&0x0F))); //Always valid
@@ -307,8 +312,9 @@ void Dig_Clk_test::unmask_all() {
 bool Dig_Clk_test::TFC_Command_Check() {
   uint8_t command[max_commands]={0};
   uint8_t length = 90;
-  uint16_t length_read = 150;
+  uint16_t length_read = 500;
   string data_string;
+  uint32_t data[5120];
   bool singleShot = true;
   int period = length;
   int flag = 0;
@@ -316,52 +322,69 @@ bool Dig_Clk_test::TFC_Command_Check() {
   int bxid = 0;
   int parity = 0;
   uint8_t buffer;
-  unsigned twelveBits;
+  unsigned twelveBits[10240];
   int counter = 0;
   unmask_all();
 
+  //TFC_Reset();
   // DSP output
   salt_->write_salt(registers::ser_source_cfg,(uint8_t) 0x20);
 
+  //salt_->read_salt(registers::pack_adc_sync_cfg, &buffer);
+  //cout << "BUFFER = " << hex << (unsigned) buffer << endl;
   // set synch pattern registers
   salt_->write_salt(registers::sync1_cfg,(uint8_t) 0x8C);
   salt_->write_salt(registers::sync0_cfg,(uint8_t) 0xAB);
 
+  salt_->write_salt(registers::idle_cfg, (uint8_t) 4);
+  // fereset counter for snapshot command check
+  uint8_t counter_fere_snap = 0;
  
   // check TFC commands
   string option[8];
   bool pass[8] = {false};
   option[0] = "Normal";
-  option[1] = "BXReset";
-  option[2] = "Header";
+  option[2] = "BXReset";
+  option[1] = "Header";
   option[3] = "NZS";
   option[4] = "BxVeto";
-  option[5] = "Normal";
-  option[6] = "Snapshot";
-  option[7] = "FEReset";
+  option[5] = "Synch";
+  option[7] = "Snapshot";
+  option[6] = "FEReset";
   
   for(int i=0; i<79; i++)
     command[i]=0x04;
   
   for(int i=0; i < 8; i++) {
+	  //cout << endl;
     if(option[i] == "Normal")        command[79] = 0x00;
     else if(option[i] == "BXReset")  command[79] = 0x01;
     else if(option[i] == "FEReset")  command[79] = 0x02;
-    else if(option[i] == "Header")   command[79] = 0x04;
+    else if(option[i] == "Header")   (command[79] = 0x04, command[80] = 0x04, command[81] = 0x04);
     else if(option[i] == "NZS")      command[79] = 0x08;
     else if(option[i] == "BxVeto")   command[79] = 0x10;
-    else if(option[i] == "Snapshot") command[79] = 0x20;
-    else if(option[i] == "Synch")    command[79] = 0x40;
+    else if(option[i] == "Snapshot") (command[79] = 0x08, command[80] = 0x08, command[81] = 0x20);
+    else if(option[i] == "Synch")    {command[79] = 0x40; for(int k=80;k<89;k+=2) {command[k] = 0x40, command[k+1] = 0x10;};};
 
- 
-    
-    fastComm_->Take_a_run(length_read, data_string, length, 0, command, period, singleShot, true );
+TFC_Reset(); 
+    //cout << "option[" << i << "] = " << option[i] << endl;
+    //cout << "command[79]" << hex << (unsigned) command[79] << endl;
 
-    for(int j=0; j< (int)data_string.length(); j+=3) {
+    fastComm_->Take_a_run(length_read, data, length, 0, command, period, singleShot, true );
+
+    for(int j=0; j< length_read; j++) {
      
-      twelveBits = fastComm_->read_twelveBits(data_string, j);
-      if(twelveBits == 0x0F0) continue;
-      fastComm_->read_Header(twelveBits, bxid, parity, flag, length1);
+
+         twelveBits[2*j] = fastComm_->read_twelveBits(data[j], 0);
+	 twelveBits[2*j+1] = fastComm_->read_twelveBits(data[j], 1);
+    	//cout << "option[" << i << "] = " << option[i] << endl;
+	//cout << hex << setfill('0') << setw(3) << twelveBits[2*j] << " " << setw(3) << twelveBits[2*j+1];
+    }
+//cout << endl;
+    for(int j=0; j<2*length_read; j++) {
+    // cout << hex <<twelveBits[j] << " ";
+      if(twelveBits[j] == 0x0F0) { continue;}
+      fastComm_->read_Header(twelveBits[j], bxid, parity, flag, length1);
       
       if(flag == 0) {
 	if(option[i] == "Normal") pass[i] = true;
@@ -370,8 +393,10 @@ bool Dig_Clk_test::TFC_Command_Check() {
       }
       if(flag == 1) {
 //cout << "option is " << option[i] << endl;
+//if(option[i] == "Header")
+//{cout << "twelve bits = " << hex << (unsigned)twelveBits[j] << endl;
 //	      cout << "length = " << hex << (unsigned) length1 << endl;
-
+//}
 
 	if(length1 == 0x11 && option[i] == "BxVeto") pass[i] = true;
 	if(length1 == 0x12 && option[i] == "Header") pass[i] = true;
@@ -379,7 +404,11 @@ bool Dig_Clk_test::TFC_Command_Check() {
 	
       }
       if(option[i] == "FEReset") {
-	salt_->read_salt(registers::header_cnt0_reg, &buffer);
+ 	
+	salt_->read_salt(registers::fereset_cnt0_snap_reg, &counter_fere_snap);
+
+
+	salt_->read_salt(registers::calib_cnt0_reg, &buffer);
 	if(buffer == 0x00) pass[i] = true;
 	
       }
@@ -388,33 +417,29 @@ bool Dig_Clk_test::TFC_Command_Check() {
 	//salt_->read_salt(registers::sync1_cfg, &buffer);
 	salt_->read_salt(registers::sync0_cfg, &buffer);
 	
-	twelveBits = fastComm_->read_twelveBits(data_string, j+3);
+	//twelveBits[j] = fastComm_->read_twelveBits(data_string, j+3);
 	
 
-	if((buffer & 0xFF) == (twelveBits & 0xFF))
+	if((buffer & 0xFF) == (twelveBits[j] & 0xFF))
 	  pass[i] = true;
 	
       }
       if(option[i] == "Snapshot") {
 
-	salt_->read_salt(registers::header_cnt0_snap_reg, &buffer);
+	salt_->read_salt(registers::nzs_cnt0_snap_reg, &buffer);
 	//salt_->read_salt(registers::bxid_cnt0_sn
-	//cout << hex << (unsigned) twelveBits << endl;
-	//cout << "snap is : " << hex << (unsigned) buffer << endl;
-
-	//	cout << "BUFFER " << hex << (unsigned) buffer << endl;
-	//cout << "bxid " << hex << (unsigned) bxid << endl;
-	
-	if(buffer == 79)
+//cout << hex << (unsigned) buffer << endl;	
+	if((buffer) == 2)
 	  pass[i] = true;
       }
-      
     }
 
+     //cout << endl; 
     if(!pass[i]) {
       cout << "ERROR::TFC " << option[i] << " fails" << endl;
       counter++;
     }
+    else cout << option[i] << " passed" << endl;
     
   }
   

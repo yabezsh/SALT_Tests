@@ -141,28 +141,28 @@ void Ana_tests::Get_run(string option, int runs, string outText) {
 	}
 
 	m_noise_rms = calculateSD(avg_chip, runs);
-	output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
+	//output_file(runs, avg_ADC, avg_chip, avg_noise, length_avg, outText, option);
 	//cout << "test4" << endl;
 }
 
 // creates output file with run(s) results
 void Ana_tests::output_file(int runs, float avg_ADC[], float avg_chip[], float avg_noise, float length_avg, string outText, string option) {
 
-  ofstream outfile;
-  outfile.open ((option+"_"+outText+".txt").c_str());
-  outfile << "length_avg = " << dec << length_avg << endl;
+  //ofstream outfile;
+  //outfile.open ((option+"_"+outText+".txt").c_str());
+  //outfile << "length_avg = " << dec << length_avg << endl;
   
   for(int j = 0; j<runs; j++) avg_noise+=avg_chip[j]/((float) runs);
       
-  outfile << "runs = " << dec << runs << ", Average = " << avg_noise << ", std_dev = " << calculateSD(avg_chip, runs)<<endl;
+  //outfile << "runs = " << dec << runs << ", Average = " << avg_noise << ", std_dev = " << calculateSD(avg_chip, runs)<<endl;
   
   
   
-  for(int j=0; j<128; j++) {
-      outfile << dec << avg_ADC[j] << endl;
-  }
+  //for(int j=0; j<128; j++) {
+  //    outfile << dec << avg_ADC[j] << endl;
+  //}
   
-  outfile.close();
+  //outfile.close();
     
   return;  
   
@@ -173,11 +173,12 @@ bool Ana_tests::Baseline_corr() {
   
   // Set SALT to DSP output
   salt_->write_salt(registers::ser_source_cfg, (uint8_t) 0x20);
-  
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x20);
+
   // output files to save data
-  ofstream outfile, trimdac_scan;
-  outfile.open("Baseline_value.txt");
-  trimdac_scan.open("Trim_DAC_scan.txt");
+  //ofstream outfile, trimdac_scan;
+  //outfile.open("Baseline_value.txt");
+  //trimdac_scan.open("Trim_DAC_scan.txt");
   
   // variables
   float adc_base[128][256] = {0};
@@ -193,26 +194,32 @@ bool Ana_tests::Baseline_corr() {
     salt_->write_salt(registers::baseline_g_cfg,(uint8_t) i);    // baseline value written to salt
     Get_run("NZS",10,"no_output");
     
-    for(int j = 0; j < 128; j++) adc_base[j][i] = m_avg_adc[j];
-  }
+    for(int j = 0; j < 128; j++) {
+	    adc_base[j][i] = m_avg_adc[j];
+    //cout << "m_avg_adc = " << m_avg_adc << endl;
+
+    }
+  }		
   // loop over all baseline values and channels and find best value (lowest abs(ADC))
   for(int j = 0; j < 128; j++) {
     for(int i=0; i<256; i++) {
-      trimdac_scan << adc_base[j][i] << "\t";
+      //trimdac_scan << adc_base[j][i] << "\t";
       if(abs(adc_base[j][baseline[j]]) > abs(adc_base[j][i])) baseline[j]=i;
     } 
-    trimdac_scan << endl; // save scan data to output file
+    //trimdac_scan << endl; // save scan data to output file
     avg_baseline += baseline[j]/128.;    // calculate avg best value
+
+ m_baseline[j] = baseline[j];
     salt_->write_salt((registers::baseline0_cfg) + j,(uint8_t) baseline[j]);    // write best value to salt register
   }
 
   // write best trim dac setting to file
-  outfile << "AVG = " << avg_baseline << endl;
-  outfile << "STD_DEV = " << calculateSD(baseline,128) << endl;
+  //outfile << "AVG = " << avg_baseline << endl;
+  //outfile << "STD_DEV = " << calculateSD(baseline,128) << endl;
   for(int i = 0; i < 128; i++)
-    outfile << dec << baseline[i] << endl;
-  outfile.close();
-  trimdac_scan.close();
+   // outfile << dec << baseline[i] << endl;
+  //outfile.close();
+  //trimdac_scan.close();
   // revert to individual baseline value for each channel
   salt_->write_salt(registers::ana_g_cfg, (uint8_t) 0X04);
   //cout << "baseline 1 "<< endl;
@@ -236,6 +243,8 @@ bool Ana_tests::Baseline_corr() {
   	  return false;
   }  
   }
+
+	baseline_outFile();
 return true;
 }
 
@@ -287,13 +296,66 @@ bool Ana_tests::Get_noise(int runs, string data_type, string option) {
   Get_run(option,runs,outText);
 
   cout << "NOISE = " << m_noise << " +- " << m_noise_rms << endl;
+  for(int i = 0; i < 128; i++) {
+
+if((abs(m_avg_adc[i])-3*m_std_dev[i]) > m_noise) {
+
+	cout <<"ERROR::ch" << i << " has high noise" << endl;
+}
+
+  }
   salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0);
-  
+ 
+ noise_outFile(); 
   return true;
   
 }
 
+void Ana_tests::noise_outFile() {
+
+	ofstream outfile;
+	outfile.open("noise.txt");
+
+  // adv avg value
+  for(int i = 0; i < 128; i++) {
+    
+    outfile  << showpos<< fixed << setprecision(3) <<  m_avg_adc[i] << " ";
+    
+  }
+  outfile << endl;
+
+  // std dev
+  for(int i = 0; i < 128; i++) {
+    
+    outfile  << showpos << fixed << setprecision(3) << m_std_dev[i] << " ";
+    
+  }
+  outfile << endl;
+ int min = -32, bins = 64;
+
+  // histogram min and number of bins
+  outfile << noshowpos << dec << min << endl;
+  outfile << bins << endl;
+
+  //int min = -32, bins = 64;
+
+  // output histogram results for each channel
+  for(int i = 0; i < 128; i++) {
+
+    for(int j=min+32; j< min+32+bins; j++) {  
+           outfile << setfill('0') << setw(3) << adc_hist[i][j] << " ";
+
+    }
+       outfile << endl;
+  }
+  
+}
+
+
 void Ana_tests::adc_output(int min, int bins) {
+
+	//ofstream outfile;
+	//outfile.open("data.txt");
 
   // adv avg value
   for(int i = 0; i < 128; i++) {
@@ -318,12 +380,15 @@ void Ana_tests::adc_output(int min, int bins) {
   
   // output histogram results for each channel
   for(int i = 0; i < 128; i++) {
+	  
 
     for(int j=min+32; j< min+32+bins; j++) {  
       cout << setfill('0') << setw(3) << adc_hist[i][j] << " ";
-      
+      //outfile << setfill('0') << setw(3) << adc_hist[i][j] << " ";
+
     }
     cout << endl;
+    //outfile << endl;
   }
   
 }
@@ -349,7 +414,7 @@ void Ana_tests::histogram(int start, int bins, int data[], int size, int ch) {
        
      }
      
-     adc_hist[ch][i]=counter;
+     adc_hist[127-ch][i]=counter;
      
    }
    
@@ -503,7 +568,7 @@ bool Ana_tests::Check_NZS() {
   }
 
   // revert threshold to 0
-  salt_->write_salt(registers::n_zs_cfg,(uint8_t) 0);
+  salt_->write_salt(registers::n_zs_cfg,(uint8_t) 0x20);
 
   return true;
 }
@@ -537,96 +602,107 @@ float Ana_tests::calculateSD(int data[], int runs) {
   
   return sqrt(standardDeviation / ((float) runs));
 }
- 
+
+
+// Gain test
 bool Ana_tests::Check_Gain() {
 
-	salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) 0x00);
-
-	float x[8], y[8][128], y1[8], y2[8];
+	float x[64] = {0}, y1[64] = {0}, y2[64] = {0};
 	int j=0;
 	bool pass = true;
-
-	// calibration pulse run
-	salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x05);
-	for(int i = 0x307; i < 0x317; i++) {
-
-	  salt_->write_salt(i,(uint8_t) 0xFF);
-
-	}
-	salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x00);
+	int pol = 1;
+	//int ch = 50;
+	m_gain_chip = 0;
+	m_offset_chip = 0;
+	uint8_t start = 0x01;
 	salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
 
-cout << "[mV] [ADC] [Err]" << endl;
+	disable_ch(128);
+	//enable_ch(ch);
 
-	// loop over impulse volages
-	for(int i = 0; i < 64; i+=8) {
+
+		//salt_->write_salt(0x30E, (uint8_t) 0x01);
+
+		//cout << "[mV] [ADC] [Err]" << endl;
+	
+	for(int ch = 0; ch < 128; ch++) {
+
+	//disable_ch(ch);
+	enable_ch(ch);	
+	if(pol == 1)
+		salt_->write_salt(registers::calib_main_cfg, (uint8_t) 0x05);
+	if(pol == -1) 
+		salt_->write_salt(registers::calib_main_cfg, (uint8_t) 0x85);
+	//cout << "pulse polarity = " << pol << endl;
+	j=0;
+		// loop over impulse volages
+	for(int i = 0; i < 52; i+=4) {
 
 		salt_->write_salt(registers::calib_volt_cfg, (uint8_t) i);   
 
-		
-		Get_run("Calib_NZS", 10, "Calib_NZS");
-		cout << i*2.7 << " " << m_noise << " " << m_noise_rms << endl;
-		//cout << "ADC_avg = " << m_noise << " +- " << m_noise_rms << endl;
+			// Do 5 runs
+		Get_run("Calib_NZS", 5, "Calib_NZS");
+		m_gain_pts[2][j] = m_noise_rms;
+
+		//cout <<  "m_gain_pts[1][" << dec << j << "] = " << m_gain_pts[1][j] << endl;
 		x[j] = i*2.7;
 		y1[j] = m_noise;
-
-		for(int k = 0; k < 128; k++) {
-			y[j][k] = m_avg_adc[k];
-			//if(k==1) cout << m_avg_adc[k] << endl;
-		}
+		y2[j] = m_avg_adc[ch];
 		j++;
 	}
 
-	for(int k = 0; k < 128; k++) {
-		for(int l = 0; l < 8; l++) 
-			y2[l] = y[l][k];
-//if(k==1) cout << 
-		if(!Check_linear(x,y2,8,0.05)) { 
-			cout << "ERROR:ch " << dec << k << " has non-linear gain" << endl;
-			pass = false;
+	for(int l = 0; l < 8; l++) {	
+			//	y2[l] = y[l][ch];
+	//cout <<	"m_gain_pts[1][" << dec << l << "] = " << m_gain_pts[1][l] << endl;
+		m_gain_pts[1][l]=y2[l]; 
+		m_gain_pts[0][l]=x[l];
+	  
+	}
+        if(!Check_linear(x,y2,5,0.05)) {
+
+		 cout << "ERROR:ch " << dec << ch << " has non-linear gain" << endl;
+	 	pass = false;
+	}
+
+
+	//cout << "ch " << ch << " gain = " << m_b<< endl; 
+	m_offset[ch] = m_a;
+	m_gain[ch] = m_b;
+	m_gain_chip += m_b/(128.);
+	m_offset_chip += m_a/(128.);
+	disable_ch(ch);
+	}
+	float std_dev = calculateSD(m_gain,128);
+
+	for(int k=0; k < 128; k++) {
+
+		if(m_gain[k] > 0) {
+
+			if((m_gain[k] - 5*std_dev) > m_gain_chip) {
+
+				cout << "ERROR::ch" << k << " has too high gain" << endl;
+				pass = false;
+			}
 		}
-		m_offset[k] = m_a;
-		m_gain[k] = m_b;
-	}
+		else {
+			if((m_gain[k]+5*std_dev) < m_gain_chip) {
+				cout << "ERROR::ch" << k << " has too low gain" << endl;
+				pass = false;
+			}
+		}
 
-	if(!Check_linear(x,y1,8,0.05)) {
-
-		cout << "ERROR::chip has non-linear gain" << endl;
-		pass = false;
-
-	}
-	m_offset_chip = m_a;
-	m_gain_chip = m_b;
-
-
-	if(pass) 
-	{
-	for(int i=0; i < 128; i++) {
-		cout  << showpos<< fixed << setprecision(3) <<  m_gain[i] << " ";
+	
 
 	}
-	cout << endl;
+	//return true;
 
-	// std dev
-	for(int i = 0; i < 128; i++) {
-
-		cout  << showpos << fixed << setprecision(3) << m_offset[i] << " ";
-
-
-
-	}
-	cout << endl;
-	cout << "CHIP GAIN = " << m_gain_chip << endl;
-	cout << "CHIP OFFSET = " << m_offset_chip << endl;
-
-	}
-	//Get_run("Calib_NZS",10,"Calib_NZS");
-	//adc_output(-32,64);
-
+	gain_outFile();
+	
 	return pass;
 
 }
 
+// Check linearity of a data set (x,y) of a given number of data points (size) and a threshold to compare linear and quadratic terms (thresh)
 bool Ana_tests::Check_linear(float x[], float y[], int size, float thresh) {
 
   float a, b, c, ratio;
@@ -647,7 +723,7 @@ bool Ana_tests::Check_linear(float x[], float y[], int size, float thresh) {
   return true;
 }
 
-// my quadratic fit
+// my quadratic fit (y = a + b*x + c*x^2)
 void Ana_tests::Get_quadTerms(float x[], float y[], int npoints, float &a, float &b, float &c) {
 
   float S01 = 0, S02 = 0, S03 = 0, S04 = 0, S10 = 0, S11 = 0, S12 = 0;
@@ -689,9 +765,9 @@ void Ana_tests::Get_quadTerms(float x[], float y[], int npoints, float &a, float
 
 bool Ana_tests::set_calib_fifo() {
 
-//salt_->write_salt(registers::others_g_cfg,(uint8_t) 0xE0);
+salt_->write_salt(registers::others_g_cfg,(uint8_t) 0xE0);
 
-
+float shape[32] = {0};
   float best=0;
   bool pass =  false;
   int best_l = 0;
@@ -699,20 +775,26 @@ bool Ana_tests::set_calib_fifo() {
   int pol = 1;
   uint8_t buffer;
   uint8_t adc_sel = 1;
-  
-  salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) 0x00);
-  // calibration pulse run
-  salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x05);
-  for(int i = 0x307; i < 0x317; i++) {
-    
-    salt_->write_salt(i,(uint8_t) 0xFF);
+  int ch = 50;
 
-    }
+  salt_->write_salt(registers::calib_fifo_cfg, (uint8_t) 0x05);
+  // calibration pulse run
+  salt_->write_salt(registers::calib_main_cfg,(uint8_t) 0x01);
+  //for(int i = 0x307; i < 0x317; i++) {
+  //  
+  //  salt_->write_salt(i,(uint8_t) 0xFF);
+
+    //}
+
+
+  disable_ch(128);
+  enable_ch(ch);
+
   salt_->write_salt(registers::calib_clk_cfg, (uint8_t) 0x05);
-  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
-  salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 31);   
+  salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x20);
+  salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 32);   
  salt_->read_salt(registers::calib_main_cfg,&buffer);
- if((buffer & 0xFF) == 0x80) pol = 1;
+ if((buffer & 0xF0) == 0xC0) pol = 1;
  else pol = -1;
   for(int i=0; i < 16 ; i++) {
 
@@ -721,23 +803,19 @@ bool Ana_tests::set_calib_fifo() {
     for(int j = 0; j < 32; j++) {
       salt_->write_salt(registers::adc_clk_cfg, (uint8_t) j);
       if((j<40) && (j>7)) {adc_sel = 0x00;}
-      else adc_sel = 0x08;
+      else adc_sel = 0x00;
       
      salt_->write_salt(registers::pack_adc_sync_cfg, adc_sel);
 
       Get_run("Calib_NZS", 5, "Calib_NZS");
-     // cout << "m_noise = " << m_noise << endl;
-//	cout << "best = " << best << endl;
-      //best = m_noise;
-      //
-      if(i==2) cout << dec << j << " " << m_noise << endl;
-      m_noise*=pol;
- 
-      if(m_noise > best){
-	best = m_noise;
+//      if(i==11) cout <<  m_noise << endl;
+      //m_noise*=pol;
+m_avg_adc[ch]*=m_avg_adc[ch];
+
+      if(m_avg_adc[ch] > best){
+	best = m_avg_adc[ch];
 	best_l = i;
 	best_c = j;
-	//adc_output(-10,20);
 
 	
       }
@@ -745,10 +823,18 @@ bool Ana_tests::set_calib_fifo() {
     }
     
   }
+
+
   if((best_c<40) && (best_c > 7)) adc_sel = 0x00;
-  else adc_sel = 0x08;
+  else adc_sel = 0x00;
+
+//if(best_c < 32) adc_sel = 0x00;
+//else adc_sel = 0x08;
+
 
   salt_->write_salt(registers::pack_adc_sync_cfg, adc_sel);
+
+
 
   salt_->write_salt(registers::tfc_fifo_cfg, (uint8_t) best_l);
  //cout << "noise is " << m_noise << endl; 
@@ -756,6 +842,268 @@ bool Ana_tests::set_calib_fifo() {
  // Get_run("Calib_NZS", 100, "Calib_NZS");
   cout << "tfc fifo delay = " << best_l << endl;
   cout << "adc clk delay  = " << best_c << endl;
+
+return true;
+
   //cout << "ADC_avg = "  << m_noise << " +- " << m_noise_rms << endl;
   //adc_output(-32,64);
 }
+
+void Ana_tests::baseline_output() {
+
+	cout << dec << 0 << endl << 255 << endl;
+
+	for(int i=0; i < 128; i++) {
+
+		cout << showpos << dec << m_baseline[i] << " "; 		
+
+	}
+	cout << endl;
+
+}
+
+void Ana_tests::baseline_outFile() {
+
+	ofstream outfile;
+  	outfile.open("trim_dac_value.txt");
+
+//	outfile << 0 << endl << 255 << endl;
+
+	for(int i=0; i < 128; i++) {
+
+		outfile << showpos << m_baseline[i] << " "; 		
+
+	}
+	outfile << endl;
+
+}
+
+
+void Ana_tests::gain_output() {
+
+	for(int i=0; i < 128; i++) {
+		cout  << showpos<< fixed << setprecision(3) <<  m_gain[i] << " ";
+
+	}
+	cout << endl;
+
+	// std dev
+	for(int i = 0; i < 128; i++) {
+
+		cout  << showpos << fixed << setprecision(3) << m_offset[i] << " ";
+
+	}
+	cout << endl;
+	cout <<  m_gain_chip << endl;
+	cout << m_offset_chip << endl;
+
+
+}
+
+void Ana_tests::gain_outFile() {
+
+	ofstream outfile;
+  	outfile.open("gain_offset.txt");
+
+	for(int i=0; i < 128; i++) {
+		outfile  << showpos<< fixed << setprecision(3) <<  m_gain[i] << " ";
+
+	}
+	outfile << endl;
+
+	// std dev
+	for(int i = 0; i < 128; i++) {
+
+		outfile  << showpos << fixed << setprecision(3) << m_offset[i] << " ";
+
+	}
+	outfile << endl;
+	//cout <<  m_gain_chip << endl;
+	//cout << m_offset_chip << endl;
+
+
+}
+
+void Ana_tests::xtalk_output() {
+
+	for(int i=0; i < 128; i++) {
+		cout  << showpos<< fixed << setprecision(3) <<  m_xtalk[i] << " ";
+
+	}
+	cout << endl;
+
+
+
+
+}
+
+void Ana_tests::xtalk_outFile() {
+
+	ofstream outfile;
+  	outfile.open("cross_talk.txt");
+
+	for(int i=0; i < 128; i++) {
+		outfile  << showpos<< fixed << setprecision(3) <<  m_xtalk[i] << " ";
+
+	}
+	outfile << endl;
+
+	outfile.close();
+
+
+}
+
+bool Ana_tests::xtalk_test() {
+
+	bool pass = true;
+	
+
+	salt_->write_salt(registers::n_zs_cfg, (uint8_t) 0x60);
+	salt_->write_salt(registers::calib_volt_cfg, (uint8_t) 32); 
+	
+	disable_ch(128);
+	for(int ch = 0; ch<128; ch++) {
+		enable_ch(ch);
+		
+		Get_run("Calib_NZS", 20, "Calib_NZS");
+	//for(int j = 0; j < 4; j++) {
+	//	usleep(100);
+
+		if(ch==0) {
+
+				xtalkl[ch] = 0;
+				xtalkr[ch] = m_avg_adc[ch+1]/m_avg_adc[ch];
+
+		}
+		else {
+
+			xtalkl[ch] = m_avg_adc[ch-1]/m_avg_adc[ch];
+
+			if(ch==127) xtalkr[ch] = 0;
+			else xtalkr[ch] = m_avg_adc[ch+1]/m_avg_adc[ch];
+
+		}
+
+		if(ch==0) m_xtalk[ch] = xtalkr[ch];
+		else if(ch==127) m_xtalk[ch] = xtalkr[ch];
+		else 
+			m_xtalk[ch] = (xtalkl[ch]+xtalkr[ch-1])/2;
+
+		disable_ch(ch);
+
+		
+	}
+
+	for(int ch = 0; ch < 128; ch++) {
+
+		if(ch==0) m_xtalk[ch] = xtalkr[ch];
+		else if(ch==127) m_xtalk[ch] = xtalkr[ch];
+		else m_xtalk[ch] = (xtalkl[ch]+xtalkr[ch-1])/2;
+
+		if(m_xtalk[ch] > 0.1) {
+
+			  cout << "ERROR:High cross-talk between ch" << ch << " and ch" << ch-1 << endl;
+			 pass = false;	 
+
+		  }
+		  
+	}
+
+//	}
+//return true;
+
+	xtalk_outFile();
+return pass;
+}
+
+
+bool Ana_tests::uniformity_test() {
+
+// noise uniformity
+
+
+// gain uniformity
+
+
+// 
+
+}
+
+void Ana_tests::enable_ch(int ch) {
+
+
+	// enable all ch if input is 128
+	if (ch==128) {
+
+		for(int i = 0x307; i < 0x317; i++) {
+
+			salt_->write_salt(i, (uint8_t) 0xFF);
+		}
+
+		cout << "All channels enabled" << endl;
+		return;
+	}
+	
+	if(ch >128) {
+
+		cout << "ERROR::Channel to enable out of range" << endl;
+		return;
+
+	}
+	uint8_t bit;
+
+	// write to correct bit
+	bit = 0x01 << ((ch + 8) % 8);
+
+	// find correct salt register to enable ch
+	for (int i = 0; i < 16; i ++)
+		if ( (ch < (i+1)*8) && (ch >= i*8 ) ) {
+			salt_->write_salt((0x307+i)  , bit);
+			return;
+			}
+
+	// if we get here, something went wrong, the channel did not enable!!!
+	cout << "ERROR::Could not enable ch " << ch << endl;
+	 
+
+}
+
+void Ana_tests::disable_ch(int ch) {
+
+	if (ch==128) {
+
+		for(int i = 0x307; i < 0x317; i++) {
+
+			salt_->write_salt(i, (uint8_t) 0x00);
+		}
+
+		cout << "All channels enabled" << endl;
+		return;
+	}
+
+	if(ch>128) {
+
+		cout << "ERROR::Channel to disable out of range" << endl;
+		return;
+
+	}
+	uint8_t bit;
+
+	// write to correct bit
+	bit = 0x00 << ((ch + 8) % 8);
+
+	// find correct salt register to enable ch
+	for (int i = 0; i < 16; i ++)
+		if ( (ch < (i+1)*8) && (ch >= i*8 ) ) {
+			salt_->write_salt((0x307+i), bit);
+			return;
+			}
+
+	// if we get here, something went wrong, the channel did not enable!!!
+	cout << "ERROR::Could not disable ch " << ch << endl;
+	 
+
+
+
+}
+

@@ -19,7 +19,9 @@ class CurrentMonitor : public I2C {
         void set_calib_bits(uint16_t );
         void set_calib_bits(uint8_t,uint8_t);
         void convert_to_amp(uint16_t*, float*);
-        
+ void read_BusVoltage_mV(int *BusVoltage_mV);
+
+       
 
     private:
         uint8_t bit_15_8_conf;
